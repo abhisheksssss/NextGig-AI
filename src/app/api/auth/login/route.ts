@@ -42,7 +42,7 @@ if (!isPasswordValid) {
 const tokenData={
     id:user._id,
     email:user.email,
-    role:user.role
+    role:user.role,
 }
 
 const token= await jwt.sign(tokenData,process.env.JWT_SECRET as string, {

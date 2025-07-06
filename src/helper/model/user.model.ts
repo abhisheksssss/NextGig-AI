@@ -7,11 +7,9 @@ export interface Iuser extends Document {
   email: string;
   role: "Freelancer" | "Client";
   password: string;
-  profilePicture?: string;
-  phoneNumber?: number;
-  location?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  onBoarding:boolean;
   comparePassword(candidatePassword: string): Promise<boolean>; // optional but recommended
 }
 
@@ -37,15 +35,10 @@ const userSchema = new Schema<Iuser>(
       type: String,
       required: [true, "Please provide your password"],
     },
-    profilePicture: {
-      type: String,
-    },
-    phoneNumber: {
-      type: Number,
-    },
-    location: {
-      type: String,
-    },
+ onBoarding:{
+      type:Boolean,
+      default:false
+    }
   },
   { timestamps: true }
 );
