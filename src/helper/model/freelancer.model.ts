@@ -24,6 +24,7 @@ export interface Ifreelancer {
     location?: string;
     createdAt?: Date;
     updatedAt?: Date;
+    resumePdf?:string;
 }
 
 
@@ -104,6 +105,9 @@ profilePicture: {
 location: {
     type: String,
     default: ''
+},resumePdf:{
+    type:String,
+    default:""
 }
 }, { timestamps: true });
 

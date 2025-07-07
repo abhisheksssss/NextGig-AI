@@ -10,8 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/user";
-
-// Lucide Icons
 import {
   UserCircle,
   MapPin,
@@ -27,6 +25,7 @@ import {
   Rocket,
   CheckCircle,
 } from "lucide-react";
+import axiosInstance from "@/lib/axios";
 
 export default function ProfileSetup() {
   const { user } = useUser();
@@ -46,7 +45,8 @@ export default function ProfileSetup() {
       phone: "",
     },
     profileVisibility: "Public",
-    profilePicture: "",
+    profilePicture: null,
+    resumePdf: null,
     location: "",
     company: "",
     Field: "",
@@ -68,6 +68,48 @@ export default function ProfileSetup() {
     }));
   };
 
+  const handleFileChange = (field: string, files: FileList | null) => {
+    if (files && files[0]) {
+      setFormData((prev: any) => ({ ...prev, [field]: files[0] }));
+    }
+  };
+
+  const handleSubmit = async () => {
+    const payload = new FormData();
+    payload.append("userId", user._id);
+    payload.append("name", user.name);
+    payload.append("email", user.email);
+    payload.append("role", user.role);
+    payload.append("Bio", formData.Bio);
+    payload.append("ContactPreference", formData.ContactPreference);
+    payload.append("contactdetails", JSON.stringify(formData.contactdetails));
+    payload.append("location", formData.location);
+    if (formData.profilePicture) payload.append("profilePicture", formData.profilePicture);
+
+    if (user.role === "Freelancer") {
+      payload.append("Proffession", formData.Proffession);
+      payload.append("Experience", formData.Experience);
+      payload.append("HourlyRate", formData.HourlyRate);
+      payload.append("Portfolio", formData.Portfolio);
+      payload.append("Availability", formData.Availability);
+      payload.append("Skills", JSON.stringify(formData.Skills.split(",")));
+      payload.append("languages", JSON.stringify(formData.languages.split(",")));
+      if (formData.resumePdf) payload.append("resumePdf", formData.resumePdf);
+    }
+
+    if (user.role === "Client") {
+      payload.append("company", formData.company);
+      payload.append("Field", JSON.stringify(formData.Field.split(",")));
+    }
+
+    try {
+      const response = await axiosInstance.post("/api/onBoarding/submit", payload);
+      console.log("Success:", response.data);
+    } catch (error) {
+      console.error("Submission failed", error);
+    }
+  };
+
   const commonCard = (children: React.ReactNode, title: string, Icon: any) => (
     <div className="w-full max-w-md space-y-6 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-muted-foreground/20 dark:border-gray-700">
       <div className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -80,38 +122,17 @@ export default function ProfileSetup() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <Swiper
-        pagination={{ clickable: true }}
-        modules={[Pagination]}
-        className="mySwiper w-full"
-      >
-        {/* Slide 1 - Bio & Location */}
-        <SwiperSlide>
+      <Swiper pagination={{ clickable: true }} modules={[Pagination]} className="mySwiper w-full">
+        <SwiperSlide key="about">
           <div className="flex items-center justify-center p-4">
             {commonCard(
               <>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                    <PencilLine className="w-4 h-4" /> Bio
-                  </Label>
-                  <Textarea
-                    placeholder="Tell us something about yourself..."
-                    value={formData.Bio}
-                    onChange={(e) => handleChange("Bio", e.target.value)}
-                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                    <MapPin className="w-4 h-4" /> Location
-                  </Label>
-                  <Input
-                    placeholder="City, Country"
-                    value={formData.location}
-                    onChange={(e) => handleChange("location", e.target.value)}
-                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                  />
-                </div>
+                <Label>Bio</Label>
+                <Textarea value={formData.Bio} onChange={(e) => handleChange("Bio", e.target.value)} />
+                <Label>Location</Label>
+                <Input value={formData.location} onChange={(e) => handleChange("location", e.target.value)} />
+                <Label>Profile Picture</Label>
+                <Input type="file" onChange={(e) => handleFileChange("profilePicture", e.target.files)} />
               </>,
               "About You",
               UserCircle
@@ -119,36 +140,18 @@ export default function ProfileSetup() {
           </div>
         </SwiperSlide>
 
-        {/* Freelancer */}
         {user.role === "Freelancer" && (
           <>
-            <SwiperSlide>
+            <SwiperSlide key="freelancer-work">
               <div className="flex items-center justify-center p-4">
                 {commonCard(
                   <>
-                    <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                      <Briefcase className="w-4 h-4" /> Profession
-                    </Label>
-                    <Input
-                      placeholder="e.g. Web Developer"
-                      value={formData.Proffession}
-                      onChange={(e) => handleChange("Proffession", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
-                    <Label className="text-gray-700 dark:text-gray-300">Experience (years)</Label>
-                    <Input
-                      type="number"
-                      value={formData.Experience}
-                      onChange={(e) => handleChange("Experience", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
-                    <Label className="text-gray-700 dark:text-gray-300">Hourly Rate ($)</Label>
-                    <Input
-                      type="number"
-                      value={formData.HourlyRate}
-                      onChange={(e) => handleChange("HourlyRate", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
+                    <Label>Profession</Label>
+                    <Input value={formData.Proffession} onChange={(e) => handleChange("Proffession", e.target.value)} />
+                    <Label>Experience (Years)</Label>
+                    <Input type="number" value={formData.Experience} onChange={(e) => handleChange("Experience", e.target.value)} />
+                    <Label>Hourly Rate ($)</Label>
+                    <Input type="number" value={formData.HourlyRate} onChange={(e) => handleChange("HourlyRate", e.target.value)} />
                   </>,
                   "Work Info",
                   Briefcase
@@ -156,26 +159,14 @@ export default function ProfileSetup() {
               </div>
             </SwiperSlide>
 
-            <SwiperSlide>
+            <SwiperSlide key="freelancer-skills">
               <div className="flex items-center justify-center p-4">
                 {commonCard(
                   <>
-                    <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                      <Code2 className="w-4 h-4" /> Skills (comma separated)
-                    </Label>
-                    <Input
-                      value={formData.Skills}
-                      onChange={(e) => handleChange("Skills", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
-                    <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                      <Languages className="w-4 h-4" /> Languages
-                    </Label>
-                    <Input
-                      value={formData.languages}
-                      onChange={(e) => handleChange("languages", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
+                    <Label>Skills (comma separated)</Label>
+                    <Input value={formData.Skills} onChange={(e) => handleChange("Skills", e.target.value)} />
+                    <Label>Languages (comma separated)</Label>
+                    <Input value={formData.languages} onChange={(e) => handleChange("languages", e.target.value)} />
                   </>,
                   "Skills & Languages",
                   Code2
@@ -183,38 +174,16 @@ export default function ProfileSetup() {
               </div>
             </SwiperSlide>
 
-            <SwiperSlide>
+            <SwiperSlide key="freelancer-portfolio">
               <div className="flex items-center justify-center p-4">
                 {commonCard(
                   <>
-                    <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                      <ImageIcon className="w-4 h-4" /> Portfolio Links
-                    </Label>
-                    <Textarea
-                      placeholder="https://github.com/..."
-                      value={formData.Portfolio}
-                      onChange={(e) => handleChange("Portfolio", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
-                    <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                      <EyeIcon className="w-4 h-4" /> Profile Visibility
-                    </Label>
-                    <select
-                      className="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                      value={formData.profileVisibility}
-                      onChange={(e) => handleChange("profileVisibility", e.target.value)}
-                    >
-                      <option value="Public">Public</option>
-                      <option value="Private">Private</option>
-                    </select>
-                    <Label className="text-gray-700 dark:text-gray-300">Profile Picture URL</Label>
-                    <Input
-                      value={formData.profilePicture}
-                      onChange={(e) => handleChange("profilePicture", e.target.value)}
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                    />
+                    <Label>Portfolio</Label>
+                    <Textarea value={formData.Portfolio} onChange={(e) => handleChange("Portfolio", e.target.value)} />
+                    <Label>Resume (PDF)</Label>
+                    <Input type="file" onChange={(e) => handleFileChange("resumePdf", e.target.files)} />
                   </>,
-                  "Portfolio & Visibility",
+                  "Portfolio & Resume",
                   ImageIcon
                 )}
               </div>
@@ -222,84 +191,53 @@ export default function ProfileSetup() {
           </>
         )}
 
-        {/* Client */}
         {user.role === "Client" && (
-          <SwiperSlide>
+          <SwiperSlide key="client-details">
             <div className="flex items-center justify-center p-4">
               {commonCard(
                 <>
-                  <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                    <Building2 className="w-4 h-4" /> Company Name
-                  </Label>
-                  <Input
-                    value={formData.company}
-                    onChange={(e) => handleChange("company", e.target.value)}
-                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                  />
-                  <Label className="text-gray-700 dark:text-gray-300">Fields of Work</Label>
-                  <Input
-                    value={formData.Field}
-                    onChange={(e) => handleChange("Field", e.target.value)}
-                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                  />
+                  <Label>Company Name</Label>
+                  <Input value={formData.company} onChange={(e) => handleChange("company", e.target.value)} />
+                  <Label>Bio</Label>
+                  <Textarea value={formData.Bio} onChange={(e) => handleChange("Bio", e.target.value)} />
+                  <Label>Fields of Work (comma separated)</Label>
+                  <Input value={formData.Field} onChange={(e) => handleChange("Field", e.target.value)} />
                 </>,
-                "Company Details",
+                "Client Info",
                 Building2
               )}
             </div>
           </SwiperSlide>
         )}
 
-        {/* Contact Info */}
-        <SwiperSlide>
+        <SwiperSlide key="contact">
           <div className="flex items-center justify-center p-4">
             {commonCard(
               <>
-                <Label className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                  <MailIcon className="w-4 h-4" /> Preferred Contact
-                </Label>
-                <select
-                  className="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                  value={formData.ContactPreference}
-                  onChange={(e) => handleChange("ContactPreference", e.target.value)}
-                >
+                <Label>Contact Preference</Label>
+                <select value={formData.ContactPreference} onChange={(e) => handleChange("ContactPreference", e.target.value)}>
                   <option value="Email">Email</option>
                   <option value="Chat">Chat</option>
                 </select>
-                <Label className="text-gray-700 dark:text-gray-300">Email</Label>
-                <Input
-                  type="email"
-                  value={formData.contactdetails.email}
-                  onChange={(e) => handleNestedChange("contactdetails", "email", e.target.value)}
-                  className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                />
-                <Label className="text-gray-700 dark:text-gray-300">Phone</Label>
-                <Input
-                  value={formData.contactdetails.phone}
-                  onChange={(e) => handleNestedChange("contactdetails", "phone", e.target.value)}
-                  className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                />
+                <Label>Email</Label>
+                <Input type="email" value={formData.contactdetails.email} onChange={(e) => handleNestedChange("contactdetails", "email", e.target.value)} />
+                <Label>Phone</Label>
+                <Input value={formData.contactdetails.phone} onChange={(e) => handleNestedChange("contactdetails", "phone", e.target.value)} />
               </>,
-              "Contact Details",
+              "Contact Info",
               MailIcon
             )}
           </div>
         </SwiperSlide>
 
-        {/* Submit */}
-        <SwiperSlide>
+        <SwiperSlide key="submit">
           <div className="flex items-center justify-center p-4">
             {commonCard(
               <div className="text-center">
                 <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-4" />
-                <h2 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">All Set!</h2>
-                <p className="text-muted-foreground dark:text-gray-400 mb-4">
-                  You can always edit this information later.
-                </p>
-                <Button
-                  className="w-full"
-                  onClick={() => console.log("Profile Submitted", formData)}
-                >
+                <h2 className="text-xl font-bold mb-2">All Set!</h2>
+                <p className="text-gray-500 mb-4">Review your details and submit your profile.</p>
+                <Button onClick={handleSubmit} className="w-full">
                   <Rocket className="w-4 h-4 mr-2" /> Submit Profile
                 </Button>
               </div>,
