@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { model, models, Schema } from "mongoose";
 
 export interface IClient extends mongoose.Document {
     userId: mongoose.Schema.Types.ObjectId;
@@ -79,6 +79,6 @@ const clientSchema= new Schema<IClient>({
     }
 }, { timestamps: true });
 
-const Client = mongoose.model<IClient>("Client", clientSchema);
+const Client =  models.Client || model<IClient>("Client", clientSchema);
 
 export default Client;

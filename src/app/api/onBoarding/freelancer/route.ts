@@ -1,77 +1,186 @@
 import { NextRequest, NextResponse } from "next/server";
-import {IncomingForm} from "formidable";
+import { IncomingForm } from "formidable";
 import fs from "fs";
 import cloudinary from "@/lib/cloudinary";
 import { mongoDBConncection } from "@/app/dbConfig/db";
+import { Readable } from "stream";
+import os from "os";
+import Freelancer from "@/helper/model/freelancer.model";
+import Client from "@/helper/model/Client.model";
 import User from "@/helper/model/user.model";
-import { Ifreelancer } from "@/helper/model/freelancer.model";
-
-
-export const config={
-    api:{
-        bodyParser: false
-    },
+// Disable default body parsing
+export const config = {
+  api: {
+    bodyParser: false,
+  },
 };
 
+// Convert web stream to Node.js stream
 
 
-export async function POST(request:NextRequest) {
-await mongoDBConncection();
-try {
-const form = new IncomingForm({
-    multiples:true, // allow multiple files per fields (even if we use one)
-    uploadDir:"/tmp", //temporay directory to save the files before upload
-    keepExtensions:true, //keep the original files extension 
-})
+function fullyNormalizeFields(fields: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
 
-const data:any = await new Promise((resolve,reject)=>{
-form.parse(request as any, (err, fields, files) =>{
-    if(err) reject(err); // if there's a parsing error, reject the promise
-        resolve({fields,files}); // otherwise, resolve with parsed data
-})
-})
+  for (const key in fields) {
+    const val = Array.isArray(fields[key]) ? fields[key][0] : fields[key];
+
+    try {
+      // Try parsing JSON (for objects or arrays)
+      const parsed = JSON.parse(val);
+      result[key] = parsed;
+    } catch {
+      // If not JSON, just use string value
+      result[key] = val;
+    }
+  }
+
+  return result;
+}
 
 
 
-const resume = data.files.resume?.[0];
-const image= data.files.image?.[0];
+function streamToNodeReadable(stream: ReadableStream<Uint8Array>): NodeJS.ReadableStream {
+  const reader = stream.getReader();
+  return new Readable({
+    async read() {
+      const { done, value } = await reader.read();
+      if (done) this.push(null);
+      else this.push(Buffer.from(value));
+    },
+  });
+}
+
+export async function POST(request: NextRequest) {
+  await mongoDBConncection();
+
+  try {
+    const nodeRequest = streamToNodeReadable(request.body!);
+
+    // Set headers manually (formidable expects these)
+    (nodeRequest as any).headers = Object.fromEntries(request.headers.entries());
+
+    const form = new IncomingForm({
+      multiples: true,
+      uploadDir: os.tmpdir(),
+      keepExtensions: true,
+    });
+
+    const data: any = await new Promise((resolve, reject) => {
+      form.parse(nodeRequest as any, (err, fields, files) => {
+        if (err) return reject(err);
+        resolve({ fields, files });
+      });
+    });
+
+    const { fields, files } = data;
+console.log('This is field and fiels',{fields,files})
+    const resume = Array.isArray(files.resumePdf) ? files.resumePdf[0] : files.resumePdf;
+    const image = Array.isArray(files.profilePicture) ? files.profilePicture : files.profilePicture;
+
+    if ( !image || !fields) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+const body = fullyNormalizeFields(fields);
+console.log("This is the body data",body)
+
+if(body.role==="Freelancer"){
+
+    if (!resume?.mimetype || !["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(resume.mimetype)) {
+  return NextResponse.json({ error: "Resume must be a PDF or DOCX" }, { status: 400 });
+}
+}
+
+
+
+if (!image[0]?.mimetype || !image[0].mimetype.startsWith("image/")) {
+  return NextResponse.json({ error: "Profile picture must be an image" }, { status: 400 });
+}
+
+  
+function getResourceType(mime: string): "image" | "video" | "raw" {
+    if(!mime) return "raw"
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  return "raw";
+}
+
+let resumeurl=null
+
+if(body.role==="Freelancer"){
+const uploadedResume = await cloudinary.uploader.upload(resume.filepath, {
+      resource_type: getResourceType(resume.mimetype),
+      folder: "resume",
+    });
+
+    resumeurl=uploadedResume
+    fs.unlinkSync(resume.filepath);
+ }
+
+
+    const uploadedImage = await cloudinary.uploader.upload(image[0].filepath, {
+      resource_type: getResourceType(image[0].mimetype),
+      folder: "profile_picture",
+    });
 
 
     
-       const body=data.fields;
+    fs.unlinkSync(image[0].filepath);
 
-console.log(body)
+    const parsedFields = Object.fromEntries(
+      Object.entries(body).map(([key, val]) => [key, Array.isArray(val) ? val[0] : val])
+    );
+
+console.log("THis is what we are getting",parsedFields)
 
 
-if(!resume || !image || !body) {
-return NextResponse.json({error:"Missing fields"},{status:400})
+
+if(parsedFields.role==="FreeLancer"){
+
+    const profile = await Freelancer.create({
+      ...parsedFields,
+      resumePdf: resumeurl?.secure_url,
+      profilePicture: uploadedImage.secure_url,
+      
+    });
+    
+
+    if(profile){
+   const setOnBoardingTrue = await User.findByIdAndUpdate(
+  parsedFields.userId,
+  { onBoarding: true },
+  { new: true } // optional: returns the updated document
+);
 }
 
-// const {userId,name,email,role,Proffession,Skills,Experience,HourlyRate,portfolio,Availability,Bio,languages,ContactPreference,contactdetails,profileVisibility,location}=body;
+    return NextResponse.json({ data: profile }, { status: 201 });
 
-const uploadeResume = await cloudinary.uploader.upload(resume.filePath, {
-    resource_type:"raw",  //since it is pdf
-    folder:"resume" //place it in the image folder on cloudinary
-})
+}
 
-const uploadeImage= await cloudinary.uploader.upload(image.filePath,{
-    resource_type:"image",
-    folder:"image" //place it in the image folder on cloudinary
-})
+if(parsedFields.role==="Client"){
+      const profile = await Client.create({
+      ...parsedFields,
+      profilePicture: uploadedImage.secure_url,
+      
+    });
+if(profile){
+   const setOnBoardingTrue = await User.findByIdAndUpdate(
+  parsedFields.userId,
+  { onBoarding: true },
+  { new: true } // optional: returns the updated document
+);
+}
 
-fs.unlinkSync(resume.filePath);
-fs.unlinkSync(image.filepath)
+    return NextResponse.json({ data: profile }, { status: 201 });
+}
 
-const profile = await User.create({
-    body,
-    resumePdf:uploadeResume.secure_url,
-    profilePicture:uploadeImage.secure_url
 
-})
 
-    } catch (error) {
-        console.log(error)
-        return NextResponse.json({error:"Internal server error"},{status:500})
-    }
 
+
+return NextResponse.json({ message: "Upbording failed" }, { status: 400 });
+  } catch (error) {
+    console.error("Error uploading:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

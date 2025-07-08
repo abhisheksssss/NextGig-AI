@@ -16,9 +16,23 @@ import Logo from "@/public/image.png"; // Adjust the path to your logo image
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react"; // Optional icons
 import { useUser } from "@/context/user";
+import axiosInstance from "@/lib/axios";
+import toast from "react-hot-toast";
 export function Header() {
 
   const {user}=useUser();
+
+const logOut=async()=>{
+try {
+  const logOut= await axiosInstance.get("/api/auth/logOut")
+  if(logOut){
+    toast.success("LogOut successfully")
+window.location.href="/"  
+  }
+} catch (error) {
+  console.log(error)
+}
+}
 
 const [mode,setMode]=React.useState("light");
 
@@ -120,7 +134,36 @@ const { setTheme } = useTheme();
 
    <div  className="">
 
-  <Link href={`/onBoarding`} className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold">Get Started</Link>  
+{user?.onBoarding===true ?
+<Link href={`/onBoarding`} className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold">Get Started</Link>  :(
+   <div className="relative group inline-block">
+      {/* Profile Image */}
+      <Image
+        src={user?.profilePicture}
+        width={50}
+        height={50}
+        alt="profile"
+        className="rounded-full cursor-pointer border border-gray-300"
+      />
+
+      {/* Dropdown Menu (Visible on Hover) */}
+      <div className="absolute right-0 pl-4 w-40 hidden group-hover:flex flex-col bg-white dark:bg-gray-900 shadow-md rounded-lg z-50">
+        <Link
+          href="/profile"
+          className="px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          Profile
+        </Link>
+        <button
+        onClick={logOut}
+          className="px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+)
+}
     
    </div>
 
@@ -128,7 +171,7 @@ const { setTheme } = useTheme();
        ( 
        <div className="flex gap-2 px-3">
   <Link href="/signup" className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold focus:bg-foreground focus:text-background">SignUp</Link>
-  <Link href="/login" className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold focus:bg-foreground focus:text-background">SignUp</Link>
+  <Link href="/login" className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold focus:bg-foreground focus:text-background">LogIn</Link>
   
        </div> )
         }

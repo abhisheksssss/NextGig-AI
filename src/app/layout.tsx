@@ -4,6 +4,8 @@ import { Providers } from "./Provider";
 import "./globals.css";
 import UserProvider from "@/context/user";
 
+import {Toaster} from "react-hot-toast"
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,11 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-    <UserProvider>
-<Providers>{children}</Providers>
-    </UserProvider>
-          
-     
+        <UserProvider>
+          <Providers>{children}</Providers>
+        </UserProvider>
+       <Toaster/>
       </body>
     </html>
   );

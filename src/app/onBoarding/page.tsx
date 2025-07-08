@@ -12,23 +12,23 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/user";
 import {
   UserCircle,
-  MapPin,
-  PencilLine,
   Briefcase,
   Code2,
-  Languages,
   ImageIcon,
-  EyeIcon,
   MailIcon,
-  Phone,
   Building2,
   Rocket,
   CheckCircle,
 } from "lucide-react";
 import axiosInstance from "@/lib/axios";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function ProfileSetup() {
   const { user } = useUser();
+
+  const router=useRouter();
+
 
   const [formData, setFormData] = useState<any>({
     Proffession: "",
@@ -74,6 +74,7 @@ export default function ProfileSetup() {
     }
   };
 
+
   const handleSubmit = async () => {
     const payload = new FormData();
     payload.append("userId", user._id);
@@ -82,7 +83,7 @@ export default function ProfileSetup() {
     payload.append("role", user.role);
     payload.append("Bio", formData.Bio);
     payload.append("ContactPreference", formData.ContactPreference);
-    payload.append("contactdetails", JSON.stringify(formData.contactdetails));
+    payload.append("contactdetails",JSON.stringify(formData.contactdetails));
     payload.append("location", formData.location);
     if (formData.profilePicture) payload.append("profilePicture", formData.profilePicture);
 
@@ -103,12 +104,17 @@ export default function ProfileSetup() {
     }
 
     try {
-      const response = await axiosInstance.post("/api/onBoarding/submit", payload);
+      const response = await axiosInstance.post(`/api/onBoarding/Freelancer`, payload);
       console.log("Success:", response.data);
+      toast.success("Onboarding successFull");
+router.push("/")
     } catch (error) {
       console.error("Submission failed", error);
+      toast.error("Onboarding Failed");
     }
   };
+
+
 
   const commonCard = (children: React.ReactNode, title: string, Icon: any) => (
     <div className="w-full max-w-md space-y-6 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-muted-foreground/20 dark:border-gray-700">
@@ -132,7 +138,7 @@ export default function ProfileSetup() {
                 <Label>Location</Label>
                 <Input value={formData.location} onChange={(e) => handleChange("location", e.target.value)} />
                 <Label>Profile Picture</Label>
-                <Input type="file" onChange={(e) => handleFileChange("profilePicture", e.target.files)} />
+                <Input type="file"  accept="image/*"  onChange={(e) => handleFileChange("profilePicture", e.target.files)} />
               </>,
               "About You",
               UserCircle

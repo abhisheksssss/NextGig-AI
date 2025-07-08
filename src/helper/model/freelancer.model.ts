@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { model, Schema,models  } from "mongoose";
 
 
 export interface Ifreelancer {
@@ -113,6 +113,6 @@ location: {
 
 
 
-const Freelancer = mongoose.model<Ifreelancer>("Freelancer", FreelancerSchema);
+const Freelancer =  models.Freelancer || model<Ifreelancer>("Freelancer", FreelancerSchema);
 
 export default Freelancer;

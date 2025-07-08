@@ -27,6 +27,7 @@ const LoginPage = () => {
             setIsLoading(false)
         } else {
             router.push("/")
+            window.location.href = "/"
         }
     }
 
