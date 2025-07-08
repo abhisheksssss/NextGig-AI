@@ -134,7 +134,7 @@ const { setTheme } = useTheme();
 
    <div  className="">
 
-{user?.onBoarding===true ?
+{user?.onBoarding===false ?
 <Link href={`/onBoarding`} className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold">Get Started</Link>  :(
    <div className="relative group inline-block">
       {/* Profile Image */}
