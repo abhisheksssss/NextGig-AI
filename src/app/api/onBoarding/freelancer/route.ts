@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       ? files.profilePicture
       : files.profilePicture;
 
-    if (!image || !fields) {
+    if ( !fields) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
@@ -106,13 +106,13 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-
+if(image){
     if (!image[0]?.mimetype || !image[0].mimetype.startsWith("image/")) {
       return NextResponse.json(
         { error: "Profile picture must be an image" },
         { status: 400 }
       );
-    }
+    }}
 
     function getResourceType(mime: string): "image" | "video" | "raw" {
       if (!mime) return "raw";

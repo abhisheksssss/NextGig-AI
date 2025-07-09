@@ -99,20 +99,11 @@ const { setTheme } = useTheme();
 
        
 </div>
-        {/* Search bar - hidden on mobile, shown on desktop */}
-        {user?( <div className="relative flex gap-5 mx-5 items-center ">
-     
-        <div className="hidden sm:flex items-center border-2 border-gray-300 rounded-md bg-background pr-2 ml-2">
-  <input
-            type="text"
-            placeholder="Search..."
-            className="w-full px-4 py-2 rounded-md bg-background text-sm border-none focus:outline-none"
-          />
-         <SearchIcon />
-         
-        </div>
+     {/* Search bar - hidden on mobile, shown on desktop */}
+   
+<div className="flex items-center gap-3">
 
-             <div>
+     <div>
             {
               mode==="light"? <button onClick={()=>{
                 setMode("dark")
@@ -130,7 +121,21 @@ const { setTheme } = useTheme();
               </button>
             }
 
-</div>
+</div>  
+
+ {user?( <div className="relative flex gap-5 mx-5 items-center ">
+     
+        <div className="hidden sm:flex items-center border-2 border-gray-300 rounded-md bg-background pr-2 ml-2">
+  <input
+            type="text"
+            placeholder="Search..."
+            className="w-full px-4 py-2 rounded-md bg-background text-sm border-none focus:outline-none"
+          />
+         <SearchIcon />
+         
+        </div>
+
+            
 
    <div  className="">
 
@@ -138,7 +143,7 @@ const { setTheme } = useTheme();
 <Link href={`/onBoarding`} className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold">Get Started</Link>  :(
    <div className="relative group inline-block">
       {/* Profile Image */}
-      <Image
+  <Image
         src={user?.profilePicture}
         width={50}
         height={50}
@@ -175,7 +180,7 @@ const { setTheme } = useTheme();
   
        </div> )
         }
-       
+       </div>
       </div>
     </header>
   );

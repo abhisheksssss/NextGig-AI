@@ -26,12 +26,36 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Card } from "@/components/ui/card";
 
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 import "swiper/css/effect-fade";
+import Image from "next/image";
+
+interface ContactDetails {
+  email: string;
+  phone: string;
+}
+
+interface FormData {
+  Proffession: string;
+  Skills: string;
+  Experience: string;
+  HourlyRate: string;
+  Portfolio: string;
+  Availability: string;
+  Bio: string;
+  languages: string;
+  ContactPreference: string;
+  contactdetails: ContactDetails;
+  profileVisibility: string;
+  profilePicture: File | null;
+  resumePdf: File | null;
+  location: string;
+  company: string;
+  Field: string;
+}
 
 export default function ProfileSetup() {
   const { user } = useUser();
@@ -39,7 +63,7 @@ export default function ProfileSetup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<FormData>({
     Proffession: "",
     Skills: "",
     Experience: "",
@@ -70,23 +94,23 @@ export default function ProfileSetup() {
     </div>
   );
 
-  const handleChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleNestedChange = (parent: string, child: string, value: any) => {
-    setFormData((prev: any) => ({
+  const handleNestedChange = (parent: keyof FormData, child: keyof ContactDetails, value: string) => {
+    setFormData((prev) => ({
       ...prev,
       [parent]: {
-        ...prev[parent],
+        ...prev[parent] as ContactDetails,
         [child]: value,
       },
     }));
   };
 
-  const handleFileChange = (field: string, files: FileList | null) => {
+  const handleFileChange = (field: keyof FormData, files: FileList | null) => {
     if (files && files[0]) {
-      setFormData((prev: any) => ({ ...prev, [field]: files[0] }));
+      setFormData((prev) => ({ ...prev, [field]: files[0] }));
     }
   };
 
@@ -103,7 +127,7 @@ export default function ProfileSetup() {
     payload.append("ContactPreference", formData.ContactPreference);
     payload.append("contactdetails", JSON.stringify(formData.contactdetails));
     payload.append("location", formData.location);
-    
+    payload.append("Availability",formData.Availability)
     if (formData.profilePicture) {
       payload.append("profilePicture", formData.profilePicture);
     }
@@ -129,6 +153,7 @@ export default function ProfileSetup() {
       const response = await axiosInstance.post(`/api/onBoarding/Freelancer`, payload);
       toast.success("Profile setup completed successfully!");
       router.push("/");
+      window.location.href="/"
     } catch (error) {
       console.error("Submission failed", error);
       toast.error("Profile setup failed. Please try again.");
@@ -137,7 +162,7 @@ export default function ProfileSetup() {
     }
   };
 
-  const commonCard = (children: React.ReactNode, title: string, Icon: any) => (
+  const commonCard = (children: React.ReactNode, title: string, Icon: React.ElementType) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -152,7 +177,7 @@ export default function ProfileSetup() {
     </motion.div>
   );
 
-  const totalSlides = user.role === "Freelancer" ? 5 : 3;
+  const totalSlides = user.role === "Freelancer" ? 6 : 4;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/50 py-12 px-4 sm:px-6 lg:px-8">
@@ -180,7 +205,7 @@ export default function ProfileSetup() {
             onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
           >
             {/* About Slide */}
-            <SwiperSlide>
+            <SwiperSlide key="about-slide">
               <div className="flex justify-center">
                 {commonCard(
                   <>
@@ -209,10 +234,11 @@ export default function ProfileSetup() {
                         <div className="flex items-center gap-4 mt-2">
                           <div className="relative w-16 h-16 rounded-full bg-muted overflow-hidden border">
                             {formData.profilePicture ? (
-                              <img
+                              <Image
                                 src={URL.createObjectURL(formData.profilePicture)}
                                 alt="Profile preview"
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -240,7 +266,7 @@ export default function ProfileSetup() {
             {/* Freelancer Work Info */}
             {user.role === "Freelancer" && (
               <>
-                <SwiperSlide>
+                <SwiperSlide key="freelancer-work-info">
                   <div className="flex justify-center">
                     {commonCard(
                       <>
@@ -287,7 +313,7 @@ export default function ProfileSetup() {
                 </SwiperSlide>
 
                 {/* Skills & Languages */}
-                <SwiperSlide>
+                <SwiperSlide key="freelancer-skills-languages">
                   <div className="flex justify-center">
                     {commonCard(
                       <>
@@ -325,7 +351,7 @@ export default function ProfileSetup() {
                 </SwiperSlide>
 
                 {/* Portfolio & Resume */}
-                <SwiperSlide>
+                <SwiperSlide key="freelancer-portfolio-resume">
                   <div className="flex justify-center">
                     {commonCard(
                       <>
@@ -386,7 +412,7 @@ export default function ProfileSetup() {
 
             {/* Client Info */}
             {user.role === "Client" && (
-              <SwiperSlide>
+              <SwiperSlide key="client-info">
                 <div className="flex justify-center">
                   {commonCard(
                     <>
@@ -432,7 +458,7 @@ export default function ProfileSetup() {
             )}
 
             {/* Contact Info */}
-            <SwiperSlide>
+            <SwiperSlide key="contact-info">
               <div className="flex justify-center">
                 {commonCard(
                   <>
@@ -472,6 +498,22 @@ export default function ProfileSetup() {
                         />
                       </div>
                     </div>
+                         <div>
+                        <Label>Contact Preference</Label>
+                        <Select
+                          value={formData.Availability}
+                          onValueChange={(value) => handleChange("Availability", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select preference" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Full-time">Full-time</SelectItem>
+                            <SelectItem value="Part-time">Part-time</SelectItem>
+                            <SelectItem value="Freelance">Freelance</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                   </>,
                   "Contact Info",
                   MailIcon
@@ -480,7 +522,7 @@ export default function ProfileSetup() {
             </SwiperSlide>
 
             {/* Completion Slide */}
-            <SwiperSlide>
+            <SwiperSlide key="completion-slide">
               <div className="flex justify-center">
                 {commonCard(
                   <div className="text-center space-y-6">

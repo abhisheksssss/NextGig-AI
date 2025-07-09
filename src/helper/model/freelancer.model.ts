@@ -25,6 +25,7 @@ export interface Ifreelancer {
     createdAt?: Date;
     updatedAt?: Date;
     resumePdf?:string;
+    onBoarding:boolean;
 }
 
 
@@ -108,6 +109,10 @@ location: {
 },resumePdf:{
     type:String,
     default:""
+},onBoarding:{
+    type:Boolean,
+default:true,
+require:true
 }
 }, { timestamps: true });
 

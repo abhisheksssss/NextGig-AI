@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./Provider";
 import "./globals.css";
 import UserProvider from "@/context/user";
+import QueryProvider from "@/context/QuerProvider";
 
 import {Toaster} from "react-hot-toast"
 
@@ -29,10 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+         <QueryProvider>
         <UserProvider>
           <Providers>{children}</Providers>
         </UserProvider>
        <Toaster/>
+</QueryProvider>
       </body>
     </html>
   );

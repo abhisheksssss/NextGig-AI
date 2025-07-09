@@ -129,3 +129,15 @@ html {
 html.dark {
   --text-base: #f3f4f6; /* gray-100 */
 }
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}

@@ -38,6 +38,7 @@ export interface Ifreelancer {
     createdAt?: Date;
     updatedAt?: Date;
     resumePdf?:string;
+     onBoarding:boolean
 }
 
 
@@ -59,12 +60,8 @@ export interface IClient {
     updatedAt?: Date;   
     profilePicture?: string;
     location?: string;
+     onBoarding:boolean
 }
-
-
-
-
-
 
 
 

@@ -252,9 +252,9 @@ export default function ProfilePage() {
                     
                     <div className="mt-4 space-y-4">
                       <div>
-                        <h3 className="text-lg font-medium">{user.company || "Independent Client"}</h3>
+                        <h3 className="text-lg font-medium">Company Name:{user.company || "Independent Client"}</h3>
                         <p className="text-muted-foreground mt-1 leading-relaxed">
-                          {user.Bio || "No company description provided"}
+                  BIO:        {user.Bio || "No company description provided"}
                         </p>
                       </div>
                       

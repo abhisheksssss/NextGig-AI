@@ -17,6 +17,7 @@ export interface IClient extends mongoose.Document {
     updatedAt?: Date;   
     profilePicture?: string;
     location?: string;
+    onBoarding:true;
 }
 
 
@@ -76,7 +77,11 @@ const clientSchema= new Schema<IClient>({
     location: {
         type: String,
         default: ''
-    }
+    },onBoarding:{
+    type:Boolean,
+default:true,
+ required: true  
+}
 }, { timestamps: true });
 
 const Client =  models.Client || model<IClient>("Client", clientSchema);
