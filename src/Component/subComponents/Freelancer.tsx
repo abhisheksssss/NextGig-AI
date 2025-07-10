@@ -2,7 +2,10 @@ import React from 'react'
 
 const Freelancer = () => {
   return (
-    <div>Freelancer</div>
+    <div>
+    <p>This page in currently building</p>
+    
+    </div>
   )
 }
 
