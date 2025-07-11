@@ -2,22 +2,32 @@
 import GetBack from '@/Component/subComponents/getBack'
 import React, { useState } from 'react'
 import { useUser } from '@/context/user';
-import axiosInstance from '@/lib/axios';
+import { useMutation } from '@tanstack/react-query';
+import { createPost } from '@/lib/api';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+
+
+
+ export interface JobFormData {
+    title: string;
+    description: string;
+    skills: string[];
+    budget: number;
+  }
+
 
 const PostaJob = () => {
   const { user } = useUser();
 
-  interface JobFormData {
-    title: string;
-    description: string;
-    skills: string;
-    budget: number;
-  }
+
+const router=useRouter();
+
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
     description: '',
-    skills: '',
+    skills: [''],
     budget: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,11 +36,24 @@ const PostaJob = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'budget' ? parseFloat(value) || 0 : value
-    }));
+    setFormData(prev => {
+      if (name === 'budget') {
+        return { ...prev, budget: parseFloat(value) || 0 };
+      }
+      if (name === 'skills') {
+        // Split skills by comma and trim whitespace
+        return { ...prev, skills: value.split(',').map(s => s.trim()).filter(Boolean) };
+      }
+      return { ...prev, [name]: value };
+    });
   };
+
+
+
+const mutation= useMutation({
+  mutationFn: createPost
+})
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,18 +66,10 @@ const PostaJob = () => {
         clientId: user?._id || '',
         status: 'open',
       };
-      const response = await axiosInstance.post('/api/postJob', payload);
-      if (response.data.job) {
-        setSuccess(true);
-        setFormData({
-          title: '',
-          description: '',
-          skills: '',
-          budget: 0
-        });
-      } else {
-        setError(response.data.message || 'Failed to post job');
-      }
+  const data= await mutation.mutateAsync(payload)
+  toast.success(data.message);
+  router.push("/")
+  
     } catch (err) {
       setError('An error occurred while posting the job');
       console.error(err);
@@ -62,6 +77,11 @@ const PostaJob = () => {
       setIsSubmitting(false);
     }
   };
+
+
+
+
+
 
   if (success) {
     return (
@@ -96,10 +116,10 @@ const PostaJob = () => {
       <GetBack />
       
       {user?.role === "Client" ? (
-        <div className="w-full bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-700/30 rounded-2xl overflow-hidden mt-6">
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-500 px-8 py-6">
-            <h1 className="text-3xl font-bold text-white">Post a New Job Opportunity</h1>
-            <p className="text-blue-100/90 mt-2">Find the perfect freelancer for your project</p>
+        <div className="w-full bg-background shadow-xl dark:shadow-gray-700/30 rounded-2xl overflow-hidden mt-6 p-10">
+          <div className="bg-accent rounded-xl px-8 py-6">
+            <h1 className="text-3xl font-bold text-foreground">Post a New Job Opportunity</h1>
+            <p className="dark:bg-gray-700 mt-2">Find the perfect freelancer for your project</p>
           </div>
           
           <div className="p-6 sm:p-8">
@@ -195,7 +215,7 @@ const PostaJob = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
+                  className={`w-full flex justify-center items-center py-3 px-4 border border-foreground rounded-lg shadow-sm text-lg font-medium text-foreground hover:bg-accent  bg-background  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
                     isSubmitting ? 'opacity-80 cursor-not-allowed' : ''
                   }`}
                 >

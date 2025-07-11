@@ -18,9 +18,13 @@ import { Moon, Sun } from "lucide-react"; // Optional icons
 import { useUser } from "@/context/user";
 import axiosInstance from "@/lib/axios";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import avatar from "@/public/avatar.png"
 export function Header() {
 
   const {user}=useUser();
+
+  const router=useRouter()
 
 const logOut=async()=>{
 try {
@@ -43,7 +47,7 @@ const { setTheme } = useTheme();
       <div className=" w-full border-2 rounded-b-xl shadow-2xl flex flex-col sm:flex-row  justify-between items-center gap-4 py-3 border-b">
         {/* Logo or Brand - Add your logo here */}
      
-     <div className="flex ">  
+     <div className="flex "   onClick={()=>{router.push("/")}}>  
       
   <Image src={Logo} alt="my-image" width={50} height={50}/>
 
@@ -144,7 +148,7 @@ const { setTheme } = useTheme();
    <div className="relative group inline-block">
       {/* Profile Image */}
   <Image
-        src={user?.profilePicture}
+        src={user?.profilePicture || avatar }
         width={50}
         height={50}
         alt="profile"

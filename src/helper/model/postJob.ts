@@ -2,13 +2,13 @@ import mongoose, { model, models, Schema } from "mongoose";
 
 
 
-export interface IPostJob extends mongoose.Document{
-clientId:mongoose.Schema.Types.ObjectId,
-title:string,
-description:string,
-skills:string,
-budget:number,
-status:boolean
+export interface IPostJob extends mongoose.Document {
+  clientId: mongoose.Schema.Types.ObjectId;
+  title: string;
+  description: string;
+  skills: string[];
+  budget: number;
+  status: boolean;
 }
 
 
@@ -26,9 +26,9 @@ description:{
 type:String,
 require:true
 },
-skills:{
-    type:String,
-    required:true
+skills: {
+    type: [String],
+    required: true
 },
 budget:{
     type:Number,
