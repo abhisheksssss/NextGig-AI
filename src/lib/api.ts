@@ -12,6 +12,19 @@ export const createPost= async(formData:JobPostPayload)=>{
 
 export const fetchJobs=async()=>{
     const res = await axiosInstance.get("api/jobs/genrateRecomandation")
-    console.log("THis is response .data in axios instance",res.data)
     return res.data;
+}
+
+
+
+export const fetchJob=async(id:(string|null))=>{
+    try {
+        const res= await axiosInstance.get(`api/jobs/getJob/${id}`)
+        console.log("This is Particualr job data",res.data.data)
+        return res.data.data;
+    } catch (error) {
+        if(error instanceof Error){
+            console.log(error.message)
+        }
+    }
 }

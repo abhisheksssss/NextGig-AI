@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <>
-        <div className="relative w-screen">
+        <div className="relative ">
     <div className=" fixed z-10 w-full ">
     <Header />
     </div>

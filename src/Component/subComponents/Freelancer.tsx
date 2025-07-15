@@ -55,7 +55,9 @@ if(isError)return <p>Error :{(error as Error).message}</p>
     createdAt={index.createdAt} 
     title={index.title} 
     skills={index.skills} 
-    status={index.status}/>
+    status={index.status}
+    _id={index._id}/>
+    
   </div>  
   )):(
     <p>
@@ -64,8 +66,7 @@ if(isError)return <p>Error :{(error as Error).message}</p>
   )
 }
     </div>   
-    <div className='w-[30%] border-2 hidden md:block rounded-xl max-h-screen overflow-y-scroll h-full '>
-      
+    <div className='w-[30%] border-2 hidden md:block rounded-xl max-h-screen overflow-y-scroll h-full sticky top-6  hide-scrollbar'>
      <News/>
     </div>
     
