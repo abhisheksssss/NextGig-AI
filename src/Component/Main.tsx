@@ -14,9 +14,14 @@ const Main = () => {
             {user?.onBoarding === true ? (
                 <div>
                 {user?.role === "Client" ? (
-                    <Client />
+                   <div >
+<Client />
+                   </div> 
                 ) : (
+                    <div className='w-full'>
                     <Freelancer />
+
+                    </div>
                 )}
                 </div>
             ) : (

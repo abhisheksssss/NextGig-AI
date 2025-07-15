@@ -12,11 +12,11 @@ export default function Home() {
   return (
     <>
         <div className="relative w-screen">
-    <div className="absolute z-10 w-full ">
+    <div className=" fixed z-10 w-full ">
     <Header />
     </div>
-      <div>
-        <div>
+      <div className="w-full absolute">
+        <div className="w-full">
           <Main/>
         </div>
         <div></div>

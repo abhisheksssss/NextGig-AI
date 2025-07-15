@@ -1,9 +1,9 @@
 import mongoose, { model, models, Schema } from "mongoose";
-
+import "./Client.model";
 
 
 export interface IPostJob extends mongoose.Document {
-  clientId: mongoose.Schema.Types.ObjectId;
+  clientId:Schema.Types.ObjectId;
   title: string;
   description: string;
   skills: string[];
@@ -15,8 +15,8 @@ export interface IPostJob extends mongoose.Document {
 
 const postJobSchema= new Schema({
 clientId:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"User"
+    type:Schema.Types.ObjectId,
+    ref:"Client"
 },
 title:{
     type:String,

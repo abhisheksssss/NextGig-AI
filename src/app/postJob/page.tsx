@@ -7,27 +7,35 @@ import { createPost } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
+export interface JobFormData {
+  title: string;
+  description: string;
+  skills: string;  // For form input
+  budget: number;
+}
 
+export interface JobPostPayload {
+  title: string;
+  description: string;
+  skills: string[];  // For API submission
+  budget: number;
+  clientId: string;
+  status: string;
+}
 
- export interface JobFormData {
-    title: string;
-    description: string;
-    skills: string[];
-    budget: number;
-  }
-
+interface PostResponse {
+  message: string;
+  data: JobPostPayload;
+}
 
 const PostaJob = () => {
   const { user } = useUser();
-
-
-const router=useRouter();
-
+  const router = useRouter();
 
   const [formData, setFormData] = useState<JobFormData>({
     title: '',
     description: '',
-    skills: [''],
+    skills: '',
     budget: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,20 +48,13 @@ const router=useRouter();
       if (name === 'budget') {
         return { ...prev, budget: parseFloat(value) || 0 };
       }
-      if (name === 'skills') {
-        // Split skills by comma and trim whitespace
-        return { ...prev, skills: value.split(',').map(s => s.trim()).filter(Boolean) };
-      }
       return { ...prev, [name]: value };
     });
   };
 
-
-
-const mutation= useMutation({
-  mutationFn: createPost
-})
-
+  const mutation = useMutation<PostResponse, Error, JobPostPayload>({
+    mutationFn: createPost
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,15 +62,17 @@ const mutation= useMutation({
     setError(null);
 
     try {
-      const payload = {
-        ...formData,
+      const payload: JobPostPayload = {
+        title: formData.title,
+        description: formData.description,
+        skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
+        budget: formData.budget,
         clientId: user?._id || '',
         status: 'open',
       };
-  const data= await mutation.mutateAsync(payload)
-  toast.success(data.message);
-  router.push("/")
-  
+      const data = await mutation.mutateAsync(payload);
+      toast.success(data.message);
+      router.push("/");
     } catch (err) {
       setError('An error occurred while posting the job');
       console.error(err);

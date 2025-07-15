@@ -138,53 +138,71 @@ if(image){
       folder: "profile_picture",
     });
 
+
+
     fs.unlinkSync(image[0].filepath);
 
     const parsedFields = Object.fromEntries(
       Object.entries(body).map(([key, val]) => [
         key,
-        Array.isArray(val) ? val[0] : val,
+        Array.isArray(val)&& val.length===1 ? val[0] : val,
       ])
     );
 
-    console.log("THis is what we are getting", parsedFields);
 
     if (parsedFields.role === "Freelancer") {
-      const profile = await Freelancer.create({
-        ...parsedFields,
-        resumePdf: resumeurl?.secure_url,
-        profilePicture: uploadedImage.secure_url,
-      });
-
-      if (profile) {
-        const setOnBoardingTrue = await User.findByIdAndUpdate(
-          parsedFields.userId,
-          { onBoarding: true },
-          { new: true } // optional: returns the updated document
-        );
-      }else{
-        console.log("Problem in getting progile")
+      try {
+        const profile = await Freelancer.create({
+          ...parsedFields,
+          resumePdf: resumeurl?.secure_url,
+          profilePicture: uploadedImage.secure_url,
+        });
+  
+        if (profile) {
+          const setOnBoardingTrue = await User.findByIdAndUpdate(
+            parsedFields.userId,
+            { onBoarding: true },
+            { new: true } // optional: returns the updated document
+          );
+        }else{
+        throw new Error("profile creating failed")
+        }
+  
+        return NextResponse.json({ data: profile }, { status: 201 });
+      } catch (error) {
+        console.log("Error in freelance creation:",error)
+        if(uploadedImage?.public_id){
+          await cloudinary.uploader.destroy(uploadedImage.public_id);
+        }
+        if(resumeurl?.public_id){
+await cloudinary.uploader.destroy(resumeurl.public_id);
+        }
       }
-
-      return NextResponse.json({ data: profile }, { status: 201 });
     }
 
     if (parsedFields.role === "Client") {
-      const profile = await Client.create({
-        ...parsedFields,
-        profilePicture: uploadedImage.secure_url,
-      });
-      if (profile) {
-        const setOnBoardingTrue = await User.findByIdAndUpdate(
-          parsedFields.userId,
-          { onBoarding: true },
-          { new: true } // optional: returns the updated document
-        );
-      }else{
-        console.log("problem in getting progile in Client")
+    try {
+        const profile = await Client.create({
+          ...parsedFields,
+          profilePicture: uploadedImage.secure_url,
+        });
+        if (profile) {
+          const setOnBoardingTrue = await User.findByIdAndUpdate(
+            parsedFields.userId,
+            { onBoarding: true },
+            { new: true } // optional: returns the updated document
+          );
+        }else{
+          throw new Error("problem in getting progile in Client")
+        }
+  
+        return NextResponse.json({ data: profile }, { status: 201 });
+    } catch (error) {
+      console.log("THis is the Error in creating client",error)
+      if(uploadedImage?.public_id){
+        await cloudinary.uploader.destroy(uploadedImage.public_id);
       }
-
-      return NextResponse.json({ data: profile }, { status: 201 });
+    }
     }
 
     return NextResponse.json({ message: "Upbording failed" }, { status: 400 });

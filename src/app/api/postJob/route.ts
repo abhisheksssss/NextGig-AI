@@ -1,15 +1,18 @@
 import { getDataFromToken } from "@/helper/getDataFromToken";
+import Client from "@/helper/model/Client.model";
 import postJob, { IPostJob } from "@/helper/model/postJob";
-import { upsertJobVector } from "@/service/pinecone.service";
 import { NextRequest, NextResponse } from "next/server";
-
+import "@/helper/model/user.model"
 export async  function POST(request:NextRequest) {
     try {
         const body:IPostJob= await request.json()
 
 
-  const clientId =  getDataFromToken(request);
+  const userID =  getDataFromToken(request);
 
+  const clientId=await Client.find({userId:userID}).select("_id")
+
+console.log(clientId[0]._id)
 
 const {title,description,skills,budget}=body;
 if(!clientId || !title|| !description || !skills || !budget){
@@ -17,13 +20,8 @@ return NextResponse.json({message:"All fields are required"}, {status:400})
 }
 
 
- const textData = `Title: ${title}\nDescription: ${description}\nSkills: ${skills.join(', ')}\nBudget: ${budget}`;
-
-    await upsertJobVector(clientId.toString(),textData)
-
-
 const createdJob = await postJob.create({
-    clientId,
+    clientId:clientId[0]._id,
     title,
     description,
     skills,
