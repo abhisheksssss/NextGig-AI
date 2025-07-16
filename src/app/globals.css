@@ -144,3 +144,23 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+
+
+
+.importantAnimation {
+  color: white;
+  padding: 20px;
+  background: linear-gradient(270deg, #4c761f, #22201f, #315731, #151615, #4c761f);
+  background-size: 400% 100%;
+  animation: gradientMove 5s linear infinite;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 0%;
+  }
+}

@@ -28,3 +28,13 @@ export const fetchJob=async(id:(string|null))=>{
         }
     }
 }
+
+
+export const getFreelancer=async()=>{
+    try {
+        const res= await axiosInstance.get("/api/client/genrateRecommandationForClient")
+return res.data.data
+    } catch (error) {
+console.log(error)        
+    }
+}

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import React from 'react'
 
 const News = () => {
-  const query = '("job openings" OR "hiring now" OR "job news") site:indeed.com';
+  const query = '("job openings" OR "hiring now" OR "job news")';
   const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_KEY;
   const SEARCH_ENGINE_ID = process.env.NEXT_PUBLIC_GOOGLE_CX;
 

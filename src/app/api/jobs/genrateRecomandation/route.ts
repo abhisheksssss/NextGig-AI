@@ -3,8 +3,8 @@ import postJob from "@/helper/model/postJob";
 import { NextRequest, NextResponse } from "next/server";
 import { mongoDBConncection } from "@/app/dbConfig/db";
 import "@/helper/model/Client.model";
-import Freelancer from "@/helper/model/freelancer.model";
-import { generateRelatedSkills } from "@/service/gemini.service";
+// import Freelancer from "@/helper/model/freelancer.model";
+// import { generateRelatedSkills } from "@/service/gemini.service";
 
 
 export async function GET(request:NextRequest) {
