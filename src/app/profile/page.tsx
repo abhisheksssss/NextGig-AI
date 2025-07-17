@@ -59,7 +59,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-6">
               <div className="relative group">
                 <Image
-                  src={user?.profilePicture || "/avatar.png"}
+                  src={ (user as Ifreelancer | IClient)?.profilePicture || "/avatar.png"}
                   width={96}
                   height={96}
                   alt="Profile"

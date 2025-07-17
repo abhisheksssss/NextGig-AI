@@ -6,8 +6,7 @@ const News = () => {
   const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_KEY;
   const SEARCH_ENGINE_ID = process.env.NEXT_PUBLIC_GOOGLE_CX;
 
-  console.log('This is google api key', GOOGLE_API_KEY);
-  console.log('This is google engine id', SEARCH_ENGINE_ID);
+ 
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["GoogleSearch"],

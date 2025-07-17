@@ -1,9 +1,10 @@
-import React from 'react'
+"use client"
+import React, { useEffect } from 'react'
 import JobCards from './JobCards'
 import { useQuery } from '@tanstack/react-query'
 import { fetchJobs } from '@/lib/api'
 import News from './news';
-
+import useSocket from '@/hooks/useSocket';
 
 
 export interface JobPostPayload1 {
@@ -21,6 +22,8 @@ export interface JobPostPayload1 {
 
 const Freelancer = () => {
 
+  const socketRef=useSocket()
+
 const {data,isLoading,isError,error}=useQuery({
   queryKey: ['freelancer'],
   queryFn:fetchJobs,
@@ -30,6 +33,11 @@ const {data,isLoading,isError,error}=useQuery({
     refetchOnWindowFocus: false,       // ignore tab focus
     refetchOnReconnect: false,         // ignore network reconnect
 })
+
+
+
+
+
 
 
 console.log("THis is the data we have recieved",data)
