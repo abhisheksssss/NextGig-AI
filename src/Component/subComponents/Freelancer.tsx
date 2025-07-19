@@ -1,10 +1,10 @@
 "use client"
-import React, { useEffect } from 'react'
+import React from 'react'
 import JobCards from './JobCards'
 import { useQuery } from '@tanstack/react-query'
 import { fetchJobs } from '@/lib/api'
 import News from './news';
-import useSocket from '@/hooks/useSocket';
+// import useSocket from '@/hooks/useSocket';
 
 
 export interface JobPostPayload1 {
@@ -22,7 +22,7 @@ export interface JobPostPayload1 {
 
 const Freelancer = () => {
 
-  const socketRef=useSocket()
+  // const socketRef=useSocket()
 
 const {data,isLoading,isError,error}=useQuery({
   queryKey: ['freelancer'],

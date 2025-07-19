@@ -38,3 +38,22 @@ return res.data.data
 console.log(error)        
     }
 }
+
+
+export const getAllUsers=async()=>{
+try {
+    const res=await axiosInstance.get("/api/auth/getUsers")
+    return res.data.data
+} catch (error) {
+    console.log(error)
+}
+}
+
+export const getAllMessage=async(user1:string | null,user2:string|null)=>{
+    try {
+        const res=await axiosInstance.get(`/api/chat?user1=${user1}&user2=${user2}`)
+        return res.data.data;
+    } catch (error) {
+       console.log(error) 
+    }
+}

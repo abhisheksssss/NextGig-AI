@@ -1,7 +1,7 @@
 //mongoose is capable to connect mongodb
 
 import mongoose  from "mongoose";
-
+import "dotenv/config"
 //we have to use this connect to connect to our database again and again 
 
 if(!process.env.MONGO_URI){
