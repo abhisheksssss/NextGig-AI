@@ -57,3 +57,12 @@ export const getAllMessage=async(user1:string | null,user2:string|null)=>{
        console.log(error) 
     }
 }
+
+export const deleteChat=async(chatId:string|null)=>{
+try {
+    const res=await axiosInstance.delete(`/api/chat/deleteChat?deleteMessage=${chatId}`)
+    return res.data.data;
+} catch (error) {
+    console.log(error)
+}
+}

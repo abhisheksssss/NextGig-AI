@@ -29,8 +29,6 @@ const {data,isLoading,isError,error}=useQuery(
 
 
 
-
-
 console.log(data)
 
 
@@ -39,7 +37,7 @@ console.log(data)
   return (
 <div className="h-screen flex flex-col bg-background text-foreground">
   {/* Header */}
-  <div className="h-[10%] px-4 pt-4">
+  <div className="h-[10%] px-4">
     <GetBack />
   </div>
 
@@ -69,18 +67,35 @@ console.log(data)
         data &&
         data.map((val: IUser, i: number) => (
           <div
-            key={i}
-            onClick={() => setOtherUser({
-              otherUserId: val?._id,
-             username:val.name,
-             userRole:val.role
-              
-            })}
-            className="cursor-pointer border border-foreground/20 bg-background hover:bg-muted transition-all rounded-xl p-4 shadow-sm flex flex-col gap-1"
-          >
-            <p className="font-semibold text-foreground">{val.name}</p>
-            <p className="text-sm text-muted-foreground capitalize">{val.email}</p>
-          </div>
+  key={i}
+  tabIndex={0}
+  onClick={() =>
+    setOtherUser({
+      otherUserId: val?._id,
+      username: val.name,
+      userRole: val.role,
+    })
+  }
+  className="group cursor-pointer rounded-2xl border border-border bg-card px-5 py-4 shadow-sm transition-all duration-200 hover:shadow-md hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
+>
+  <div className="flex items-center gap-3">
+    {/* Optional Avatar Placeholder */}
+    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg uppercase">
+      {val.name?.charAt(0)}
+    </div>
+    <div className="flex-1">
+      <p className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+        {val.name}
+      </p>
+      <p className="text-sm text-muted-foreground">{val.email}</p>
+    </div>
+  </div>
+
+  {/* Optional role badge */}
+  <div className="mt-3 inline-block rounded-full bg-secondary text-secondary-foreground text-xs px-3 py-1 capitalize">
+    {val.role}
+  </div>
+</div>
         ))
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { SearchIcon } from "lucide-react";
+import { MessageCircle, SearchIcon } from "lucide-react";
 import Image from "next/image";
 import {
   NavigationMenu,
@@ -15,7 +15,7 @@ import {
 import Logo from "@/public/image.png"; // Adjust the path to your logo image
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react"; // Optional icons
-import { useUser } from "@/context/user";
+import { IClient, Ifreelancer, useUser } from "@/context/user";
 import axiosInstance from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -104,10 +104,35 @@ const { setTheme } = useTheme();
        
 </div>
      {/* Search bar - hidden on mobile, shown on desktop */}
-   
-<div className="flex items-center gap-3">
 
-     <div>
+
+      <div className="hidden md:flex items-center border-2 w-full max-w-[30%] border-gray-300 rounded-md bg-background pr-2 ml-2">
+  <input
+            type="text"
+            placeholder="Search..."
+            className="w-full px-4 py-2 rounded-md bg-background text-sm border-none focus:outline-none"
+          />
+         <SearchIcon />
+         
+        </div>
+   
+<div className="flex items-center gap-3 ">
+ {user?(
+  
+  <div className="relative flex gap-5 mx-5 items-center ">
+      <div className="flex gap-5">
+
+     
+        
+    <div>
+      {
+        user?.onBoarding===true &&<Link href={"/chat"}>
+        <MessageCircle />
+        </Link>  
+      }
+ 
+    </div>
+      <div>
             {
               mode==="light"? <button onClick={()=>{
                 setMode("dark")
@@ -125,21 +150,10 @@ const { setTheme } = useTheme();
               </button>
             }
 
-</div>  
+         </div>
+           </div>
 
- {user?( <div className="relative flex gap-5 mx-5 items-center ">
-     
-        <div className="hidden sm:flex items-center border-2 border-gray-300 rounded-md bg-background pr-2 ml-2">
-  <input
-            type="text"
-            placeholder="Search..."
-            className="w-full px-4 py-2 rounded-md bg-background text-sm border-none focus:outline-none"
-          />
-         <SearchIcon />
-         
-        </div>
-
-            
+ 
 
    <div  className="">
 
@@ -148,7 +162,7 @@ const { setTheme } = useTheme();
    <div className="relative group inline-block">
       {/* Profile Image */}
   <Image
-        src={user?.profilePicture || avatar }
+        src={(user as Ifreelancer | IClient)?.profilePicture || avatar }
         width={50}
         height={50}
         alt="profile"
