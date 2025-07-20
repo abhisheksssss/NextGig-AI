@@ -9,7 +9,9 @@ export interface IPostJob extends mongoose.Document {
   skills: string[];
   budget: number;
   status: boolean;
+  applicants:Schema.Types.ObjectId[];
 }
+
 
 
 
@@ -37,7 +39,11 @@ budget:{
 status:{
     type:Boolean,
     default:true
-}
+},
+applicants:[{
+    type:Schema.Types.ObjectId,
+    default:""
+}]
 
 
 

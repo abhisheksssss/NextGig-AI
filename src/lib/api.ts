@@ -77,3 +77,12 @@ try {
     console.log(error)
 }
 }
+
+export const applyForJob=async(data:string|null)=>{
+    try {
+        const res= await axiosInstance.put(`/api/jobs/applyForJob`,{data})
+        return res.data.data
+    } catch (error) {
+        console.log(error)
+    }
+}

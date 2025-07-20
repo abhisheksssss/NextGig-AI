@@ -2,12 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation'
-import {fetchJob, updateChatWith} from '@/lib/api'
+import {applyForJob, fetchJob, updateChatWith} from '@/lib/api'
 import GetBack from '@/Component/subComponents/getBack';
 import Image from 'next/image';
-import { MessageCircleMore, Send } from 'lucide-react';
+import { Check, MessageCircleMore, Send } from 'lucide-react';
 import Loader from '@/Component/loader';
 import SubLoader from '@/Component/subLoader';
+import toast from 'react-hot-toast';
+import { useEffect, useState } from 'react';
+import { IClient, Ifreelancer, useUser } from '@/context/user';
 
 interface ContactDetails {
   email: string;
@@ -17,6 +20,7 @@ interface ContactDetails {
 interface JobData {
   _id: string;
   title: string;
+applicants:string[]
   clientId:{
     profilePicture:string;
     Bio:string,
@@ -54,6 +58,9 @@ const ApplyForJob = () => {
   const queryClient=useQueryClient()
   const router=useRouter()
   const {id} = useParams();
+  const {user}=useUser()
+
+  const [disableButton,setDisableButton]=useState(false)
 
   const {data, isLoading, isError, error} = useQuery<JobData, Error>({
     queryKey: ['job', id ?? null],
@@ -70,6 +77,27 @@ const { mutate: updateChatMutation, isPending } = useMutation({
   }
 });
 
+
+useEffect(()=>{
+
+  if(user){
+if (data && data.applicants.includes((user as Ifreelancer | IClient)?.userId)) {
+  setDisableButton(true);
+}
+}
+},[data])
+
+
+
+
+
+const {mutate:applyForJobMutation,isPending:applyingForJob}=useMutation({
+  mutationFn:(jobId:string)=>applyForJob(jobId),
+  onSuccess:(data)=>{
+    toast.success(data);
+    setDisableButton(true)
+  }
+})
 
 
 if(isError){
@@ -138,9 +166,30 @@ return (
                 </div>
 
                 <div className='mt-8'>
-                  <button className='w-full py-3 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'>
-                    Apply Now
+{    
+
+disableButton?
+
+<button className='w-full py-3 flex items-center justify-center gap-3 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
+                  >
+             <Check className='text-green-600'/> Applied
                   </button>
+               
+:
+
+applyingForJob?
+                 <div className='w-full   font-medium  rounded-lg   '>
+                  <SubLoader/>
+                </div>
+                :<button className='w-full py-3 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
+                  onClick={()=>{ if(data?._id){
+                  applyForJobMutation(data?._id)
+                  } }}
+                  >
+                  Apply Now
+                  </button>
+               
+                  }
                 </div>
               </div>
             </div>
@@ -212,7 +261,7 @@ return (
      <div className='flex justify-between items-center mt-4 gap-10'>
 
 
- {isPending===true?<div className='flex items-center justify-center'>
+ {isPending===true?<div className='w-5 h-5 flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium object-cover  rounded-lg '>
   <SubLoader/>
  </div> : (<button className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
   onClick={()=>
