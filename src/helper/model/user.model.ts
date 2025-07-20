@@ -10,6 +10,7 @@ export interface Iuser extends Document {
   createdAt?: Date;
   updatedAt?: Date;
   onBoarding:boolean;
+ chatWith: Schema.Types.ObjectId[];
   comparePassword(candidatePassword: string): Promise<boolean>; // optional but recommended
 }
 
@@ -38,7 +39,13 @@ const userSchema = new Schema<Iuser>(
  onBoarding:{
       type:Boolean,
       default:false
-    }
+    },
+chatWith: [
+  {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  }
+]
   },
   { timestamps: true }
 );

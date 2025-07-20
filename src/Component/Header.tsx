@@ -158,7 +158,18 @@ const { setTheme } = useTheme();
    <div  className="">
 
 {user?.onBoarding===false ?
-<Link href={`/onBoarding`} className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold">Get Started</Link>  :(
+<div className="flex gap-2">
+          <button
+        onClick={logOut}
+          className="px-4 py-2 text-sm text-red-600 border-2 rounded-xl border-foreground hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+        >
+          Logout
+        </button>
+<Link href={`/onBoarding`} className="border-2 border-foreground p-2 rounded-lg shadow-2xl text-foreground hover:bg-accent font-bold">Get Started</Link> 
+
+</div>
+
+:(
    <div className="relative group inline-block">
       {/* Profile Image */}
   <Image

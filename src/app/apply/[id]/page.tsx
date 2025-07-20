@@ -1,11 +1,13 @@
 "use client"
 
-import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'next/navigation'
-import {fetchJob} from '@/lib/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams, useRouter } from 'next/navigation'
+import {fetchJob, updateChatWith} from '@/lib/api'
 import GetBack from '@/Component/subComponents/getBack';
 import Image from 'next/image';
 import { MessageCircleMore, Send } from 'lucide-react';
+import Loader from '@/Component/loader';
+import SubLoader from '@/Component/subLoader';
 
 interface ContactDetails {
   email: string;
@@ -18,6 +20,7 @@ interface JobData {
   clientId:{
     profilePicture:string;
     Bio:string,
+    userId:string
     email: string;
     Field:string[];
     name:string;
@@ -48,6 +51,8 @@ ContactPreference:string;
 }
 
 const ApplyForJob = () => {
+  const queryClient=useQueryClient()
+  const router=useRouter()
   const {id} = useParams();
 
   const {data, isLoading, isError, error} = useQuery<JobData, Error>({
@@ -56,20 +61,31 @@ const ApplyForJob = () => {
   })
 console.log("THis is data we get",data)
 
+const { mutate: updateChatMutation, isPending } = useMutation({
+  mutationFn: (chatWithId: string|null) => updateChatWith(chatWithId),
+  onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chatRoom'] });
+    router.push("/chat");
+
+  }
+});
+
+
+
 if(isError){
     return <div>Error: {error.message}</div>
 }
 
 return (
-    <div className='w-full max-w-full overflow-x-hidden custom-scrollbar'>
+    <div className='w-full h-full max-w-full overflow-x-hidden custom-scrollbar'>
         <div className='px-4'>
             <GetBack/>
         </div>
         <div className='h-full w-full custom-scrollbar'>
 {
     isLoading?(
-        <div className='flex justify-center items-center min-h-[200px]'>
-            <div className='text-lg'>Loading...</div>
+        <div className='absolute z-50 w-full flex justify-center items-center h-full '>
+       <Loader/>
         </div>
     ):(
         <div className='px-4 md:px-6 flex flex-col md:flex-row gap-6 max-w-[1400px] mx-auto'>
@@ -194,10 +210,19 @@ return (
 
                 </div>
      <div className='flex justify-between items-center mt-4 gap-10'>
-               
-  <button className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'>
+
+
+ {isPending===true?<div className='flex items-center justify-center'>
+  <SubLoader/>
+ </div> : (<button className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
+  onClick={()=>
+{    if(data){
+updateChatMutation(data?.clientId?.userId)
+    }
+    }}
+  >
                 <MessageCircleMore />   <p>send message</p>   
-                  </button>
+                  </button>)}
   <button className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'>
                <Send />    <p>send Email</p> 
                   </button>

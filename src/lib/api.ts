@@ -20,7 +20,6 @@ export const fetchJobs=async()=>{
 export const fetchJob=async(id:(string|null))=>{
     try {
         const res= await axiosInstance.get(`api/jobs/getJob/${id}`)
-        console.log("This is Particualr job data",res.data.data)
         return res.data.data;
     } catch (error) {
         if(error instanceof Error){
@@ -43,6 +42,7 @@ console.log(error)
 export const getAllUsers=async()=>{
 try {
     const res=await axiosInstance.get("/api/auth/getUsers")
+ 
     return res.data.data
 } catch (error) {
     console.log(error)
@@ -62,6 +62,17 @@ export const deleteChat=async(chatId:string|null)=>{
 try {
     const res=await axiosInstance.delete(`/api/chat/deleteChat?deleteMessage=${chatId}`)
     return res.data.data;
+} catch (error) {
+    console.log(error)
+}
+}
+
+
+
+export const updateChatWith=async(data:string|null)=>{
+try {
+    const res=await axiosInstance.put(`/api/chat/updatingChatWith`,{data})
+    return res.data.data
 } catch (error) {
     console.log(error)
 }

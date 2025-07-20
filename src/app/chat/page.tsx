@@ -29,11 +29,6 @@ const {data,isLoading,isError,error}=useQuery(
 
 
 
-console.log(data)
-
-
-
-
   return (
 <div className="h-screen flex flex-col bg-background text-foreground">
   {/* Header */}
@@ -64,8 +59,9 @@ console.log(data)
       ) : isError ? (
         <p className="text-sm text-destructive">{error.message}</p>
       ) : (
-        data &&
-        data.map((val: IUser, i: number) => (
+        data && data[0]?.chatWith?.length!==0  ?  
+
+        data[0].chatWith.map((val: IUser, i: number) => (
           <div
   key={i}
   tabIndex={0}
@@ -96,7 +92,10 @@ console.log(data)
     {val.role}
   </div>
 </div>
-        ))
+        )):
+        <div className='flex items-center justify-center h-full'>
+          No user Founded Add User to Start Chat
+        </div>
       )}
     </div>
   </div>
