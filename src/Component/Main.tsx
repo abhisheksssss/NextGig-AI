@@ -10,12 +10,12 @@ const Main = () => {
     const { user } = useUser();
 
     return (
-        <div>
+        <div> 
             {user?.onBoarding === true ? (
                 <div>
                 {user?.role === "Client" ? (
                    <div >
-<Client />
+                 <Client />
                    </div> 
                 ) : (
                     <div className='w-full'>

@@ -39,10 +39,11 @@ export function ChatRoom({
 
   const socketRef = useSocket(roomId);
   const [messages, setMessages] = useState<
-    {roomId:string ,text: string; from: string; ts: number }[]
+    {roomId:string ,text: string; from: string; ts: number,_id:string|null }[]
   >([]);
   const [text, setText] = useState("");
   const [deletingChatId,setDeletingChatId]=useState<string|null>(null)
+  const[index,setIndex]=useState<number|null>(null)
 
 
   const buttonRef = useRef<HTMLDivElement | null>(null);
@@ -54,7 +55,7 @@ export function ChatRoom({
   });
 
   const {mutate:deleteChatMutation}=useMutation({
-mutationFn:()=>deleteChat(deletingChatId),
+mutationFn:(ChatId:string)=>deleteChat(ChatId),
 onSuccess:(data)=>{
   queryClient.invalidateQueries({queryKey:["messages"]})
   setDeletingChatId(null)
@@ -67,16 +68,21 @@ onSuccess:(data)=>{
     const socket = socketRef.current;
     if (!socket) return;
 
-    const handleMessage = (msg: {roomId:string; text: string; from: string; ts: number }) => {
+    const handleMessage = (msg: {roomId:string; text: string; from: string; ts: number,_id:string|null }) => {
       console.log(msg);
       setMessages((prev) => [...prev, msg]);
     };
     socket.on("message", handleMessage);
 setMessages([])
+setDeletingChatId(null)
+
     return () => {
       socket.off("message", handleMessage);
     };
   }, [roomId]);
+
+
+
 
   useLayoutEffect(() => {
     const timeout = setTimeout(() => {
@@ -106,6 +112,18 @@ setMessages([])
     }
   };
 
+  console.log("THese are the messages",messages)
+
+  const onDeleteHandler=()=>{
+  
+    if(deletingChatId){
+    deleteChatMutation(deletingChatId)
+    if (index !== null && index !== undefined) {
+    setMessages(messages.filter((_,i)=>i!==index))
+    setIndex(null)
+   }
+    }
+  }
 
 
   return anohterUserId ? (
@@ -129,7 +147,7 @@ setMessages([])
   </div>  
 
   <div >
-   { deletingChatId && <Trash className="hover:text-red-600"  onClick={()=>deleteChatMutation()}/>}
+   { deletingChatId && <Trash className="hover:text-red-600"  onClick={onDeleteHandler}/>}
   </div>
   </div>
 
@@ -144,7 +162,11 @@ setMessages([])
         {data?.map((m:IChat, i:number) => (
           <div
             key={`db-${i}`}
-            onDoubleClick={()=>  m.sender._id === currentUserId &&  setDeletingChatId(m._id)}
+           onDoubleClick={() => {
+  if (m.sender._id === currentUserId) {
+    setDeletingChatId((prev) => (prev === m._id ? null : m._id));
+  }
+}}
             className={`max-w-[75%] md:max-w-sm px-4 py-3 rounded-2xl text-sm shadow-md transition ${deletingChatId === m._id ? "bg-red-700" : ""} ${
               m.sender._id === currentUserId
                 ? "ml-auto bg-primary text-primary-foreground rounded-br-none"
@@ -167,7 +189,14 @@ setMessages([])
           m.roomId === roomId ? (
             <div
               key={`socket-${i}`}
-              className={`max-w-[75%] md:max-w-sm px-4 py-3 rounded-2xl text-sm shadow-md transition ${
+                 onDoubleClick={() => {
+  if (m?.from === currentUserId) {
+    setIndex(i)
+    setDeletingChatId((prev) =>
+      (prev === m._id ? null : m._id));
+  }
+}}
+              className={`max-w-[75%] md:max-w-sm px-4 py-3 rounded-2xl text-sm shadow-md transition  ${deletingChatId === m._id ? "bg-red-700" : ""}  ${
                 m.from === currentUserId
                   ? "ml-auto bg-primary text-primary-foreground rounded-br-none"
                   : "mr-auto bg-secondary text-secondary-foreground rounded-bl-none"

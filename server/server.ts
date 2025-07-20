@@ -50,17 +50,35 @@ console.log(`🧠 RedisMemoryServer running at redis://${host}:${port}`);
 
       const msg = {roomId ,text, from: from, to,ts: Date.now() };
       console.log(msg)
+    
 
-      io.to(roomId).emit('message', msg);
-
-// save to databse 
 try {
-  const message = await messageModel.create({sender:from,receiver:to,text})
-  if(!message){
-throw new Error("No data founded")  }
+  const savedMessage = await messageModel.create({sender:from,receiver:to,text,roomId})
+if(savedMessage){
+const mesg = {
+      _id: savedMessage._id,      // ✅ Include MongoDB _id
+      roomId,
+      text: savedMessage.text,
+      from: savedMessage.sender,  // you can keep this as 'from' if you want
+      to: savedMessage.receiver,
+      ts: savedMessage.createdAt || Date.now(), // or savedMessage.timestamp if you store one
+    };
+
+    console.log(mesg)
+
+  io.to(roomId).emit('message', mesg);
+}
+
 } catch (error) {
   console.log(error)
 }
+
+
+
+     
+
+// save to databse 
+
 
    });
 });

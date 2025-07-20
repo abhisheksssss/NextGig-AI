@@ -7,6 +7,7 @@ const MessageSchema = new mongoose.Schema({
   text: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
   read: { type: Boolean, default: false },
+  roomId:{type:String,require:true}
 });
 
 export default mongoose.models.Message || mongoose.model("Message", MessageSchema);
