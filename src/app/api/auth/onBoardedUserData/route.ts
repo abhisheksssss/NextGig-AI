@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 import Freelancer from "@/helper/model/freelancer.model";
 import Client from "@/helper/model/Client.model";
 
-await mongoDBConncection();
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,6 +16,7 @@ export async function GET(request: NextRequest) {
         status: 404,
       });
     }
+await mongoDBConncection();
 
 console.log(user)
 

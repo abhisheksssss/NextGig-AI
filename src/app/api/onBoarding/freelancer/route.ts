@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
     });
 
     const { fields, files } = data;
-    console.log("This is field and fiels", { fields, files });
     const resume = Array.isArray(files.resumePdf)
       ? files.resumePdf[0]
       : files.resumePdf;
@@ -89,7 +88,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = fullyNormalizeFields(fields);
-    console.log("This is the body data", body);
 
     if (body.role === "Freelancer") {
       if (

@@ -1,5 +1,6 @@
 import { mongoDBConncection } from "@/app/dbConfig/db";
 import { getDataFromToken } from "@/helper/getDataFromToken";
+import Freelancer from "@/helper/model/freelancer.model";
 import postJob from "@/helper/model/postJob";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,17 +22,19 @@ const body=await request.json()
 
 const {data}= body;
 
-console.log("This is the body",data)
 
 await mongoDBConncection();
 
 
+const fetchFreelancerId=await Freelancer.find({userId:_id}).select("_id")
+
+
+
 const updateChatWith= await postJob.findByIdAndUpdate(data,{
-    $addToSet:{applicants:_id}
+    $addToSet:{applicants:fetchFreelancerId}
 }       , // Prevents duplicate entries
    {new:true} // returns the updated document
 )
-console.log("THis is the updated chat user",updateChatWith)
 
 if(updateChatWith.lenght===0){
     return new Error("Error in updating fields")

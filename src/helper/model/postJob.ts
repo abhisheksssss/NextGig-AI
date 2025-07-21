@@ -42,6 +42,7 @@ status:{
 },
 applicants:[{
     type:Schema.Types.ObjectId,
+    ref:"Freelancer",
     default:""
 }]
 

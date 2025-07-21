@@ -10,7 +10,6 @@ try {
     }
 
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
-console.log("Decoded Token:", decodedToken);
 return decodedToken.id;
 } catch (error) {
     if(error instanceof Error) {

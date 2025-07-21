@@ -12,7 +12,6 @@ export async  function POST(request:NextRequest) {
 
   const clientId=await Client.find({userId:userID}).select("_id")
 
-console.log(clientId[0]._id)
 
 const {title,description,skills,budget}=body;
 if(!clientId || !title|| !description || !skills || !budget){

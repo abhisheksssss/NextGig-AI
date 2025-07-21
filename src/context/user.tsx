@@ -86,12 +86,8 @@ const UserProvider = ({children}:{children: React.ReactNode}) => {
         if(data){
 if(data.data.data.onBoarding===true){
     const response=await axiosInstance.get("/api/auth/onBoardedUserData")
-    console.log(response)
-    console.log("This is onBoarded Data",response.data.data)
     setUser(response?.data?.data[0])
-    console.log(response.data.data[0])
 }else{
-     console.log("This is data",data?.data?.data)
       setUser(data?.data?.data);
 }
  }

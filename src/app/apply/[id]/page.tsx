@@ -66,7 +66,6 @@ const ApplyForJob = () => {
     queryKey: ['job', id ?? null],
     queryFn: () => fetchJob(id ? id.toString() : null)
   })
-console.log("THis is data we get",data)
 
 const { mutate: updateChatMutation, isPending } = useMutation({
   mutationFn: (chatWithId: string|null) => updateChatWith(chatWithId),
@@ -81,7 +80,7 @@ const { mutate: updateChatMutation, isPending } = useMutation({
 useEffect(()=>{
 
   if(user){
-if (data && data.applicants.includes((user as Ifreelancer | IClient)?.userId)) {
+if (data && data.applicants.includes((user as Ifreelancer | IClient)?._id)) {
   setDisableButton(true);
 }
 }

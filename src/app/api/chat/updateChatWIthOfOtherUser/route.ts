@@ -27,8 +27,8 @@ const {data}= body;
 
 await mongoDBConncection()
 
-const updateChatWith= await User.findByIdAndUpdate(_id,{
-    $addToSet:{chatWith:data}
+const updateChatWith= await User.findByIdAndUpdate(data,{
+    $addToSet:{chatWith:_id}
 }       , // Prevents duplicate entries
    {new:true} // returns the updated document
 )

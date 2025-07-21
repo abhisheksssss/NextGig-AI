@@ -27,7 +27,6 @@ const genrateBioUsingApi= await genrateContentAi(content)
 if(genrateBioUsingApi){
 const plainText = removeMarkdown(genrateBioUsingApi);
 
-console.log(plainText); // Output: "Hello, world! Link"
 
 
 return NextResponse.json({data:plainText},{status:200})

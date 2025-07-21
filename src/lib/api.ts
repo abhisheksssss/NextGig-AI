@@ -32,6 +32,7 @@ export const fetchJob=async(id:(string|null))=>{
 export const getFreelancer=async()=>{
     try {
         const res= await axiosInstance.get("/api/client/genrateRecommandationForClient")
+        console.log("Get freeelancer ",res.data.data)
 return res.data.data
     } catch (error) {
 console.log(error)        
@@ -78,10 +79,41 @@ try {
 }
 }
 
+
+
+export const updateChatWithOfOthers=async(data:string|null)=>{
+try {
+    const res=await axiosInstance.put(`/api/chat/updateChatWIthOfOtherUser`,{data})
+    return res.data.data
+} catch (error) {
+    console.log(error)
+}
+}
+
 export const applyForJob=async(data:string|null)=>{
     try {
         const res= await axiosInstance.put(`/api/jobs/applyForJob`,{data})
         return res.data.data
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
+export const getApplicants=async()=>{
+    try {
+        const res= await axiosInstance.get(`/api/jobs/fetchApplicants`)
+        return res.data.data
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
+export const getParticularUserData=async(userId:string,userRole:string)=>{
+    try {
+        const res= await axiosInstance.get(`api/auth/getParticularUserData?userId=${userId}&userRole=${userRole}`)
+        return res.data.data[0]
     } catch (error) {
         console.log(error)
     }

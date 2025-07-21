@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import avatar from "@/public/avatar.png";
 import { Send, Trash } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteChat, getAllMessage } from "@/lib/api";
+import { deleteChat, getAllMessage, updateChatWithOfOthers } from "@/lib/api";
 import { useUser } from "@/context/user";
 import SubLoader from "../subLoader";
 
@@ -44,7 +44,7 @@ export function ChatRoom({
   const [text, setText] = useState("");
   const [deletingChatId,setDeletingChatId]=useState<string|null>(null)
   const[index,setIndex]=useState<number|null>(null)
-
+const[run,sethasRun]=useState(false)
 
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
@@ -54,6 +54,16 @@ export function ChatRoom({
     enabled: !!currentUserId && !!anohterUserId,
   });
 
+
+const { mutate: updateChatWithOfOTherMutation } = useMutation({
+  mutationFn: (chatWithId: string|null) => updateChatWithOfOthers(chatWithId),
+  onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chatRoom'] });
+      sethasRun(true)
+  }
+});
+
+
   const {mutate:deleteChatMutation}=useMutation({
 mutationFn:(ChatId:string)=>deleteChat(ChatId),
 onSuccess:(data)=>{
@@ -62,14 +72,13 @@ onSuccess:(data)=>{
  }
 })
 
-  console.log(data);
+  
 
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
 
     const handleMessage = (msg: {roomId:string; text: string; from: string; ts: number,_id:string|null }) => {
-      console.log(msg);
       setMessages((prev) => [...prev, msg]);
     };
     socket.on("message", handleMessage);
@@ -108,11 +117,19 @@ setDeletingChatId(null)
         from: currentUserId,
         to: anohterUserId,
       });
+
+
+if(!run){
+   updateChatWithOfOTherMutation(anohterUserId)
+   console.log("Hello world")
+}
+
+
+
       setText("");
     }
   };
 
-  console.log("THese are the messages",messages)
 
   const onDeleteHandler=()=>{
   

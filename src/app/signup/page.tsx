@@ -19,7 +19,6 @@ const RegisterPage = () => {
 
   const router = useRouter();
 
-  console.log(email);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

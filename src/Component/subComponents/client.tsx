@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { getFreelancer } from '@/lib/api'
+import { getApplicants, getFreelancer } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
 import { Menu, X } from 'lucide-react'
 import Image from 'next/image'
@@ -13,8 +13,38 @@ interface Freelancer {
   Proffession: string;
   Skills: string[];
   Experience: string;
+  role:string;
   _id: string;
 }
+interface Applicant {
+  Availability: string;
+  Bio: string;
+  ContactPreference: string;
+  Experience: number;
+  HourlyRate: number;
+  Portfolio: string[];
+  Proffession: string;
+  Skills: string[];
+  contactdetails: {
+    email: string;
+    phone: string;
+  };
+  createdAt: string;
+  email: string;
+  languages: string[];
+  location: string;
+  name: string;
+  onBoarding: boolean;
+  profilePicture: string;
+  profileVisibility: string;
+  resumePdf: string;
+  role: string;
+  updatedAt: string;
+  userId: string;
+  _id: string;
+  __v: number;
+}
+
 
 const Client = () => {
   const [openSideBar, setOpenSideBar] = React.useState(false)
@@ -24,8 +54,14 @@ const Client = () => {
     queryKey: ['clients'],
     queryFn: getFreelancer
   })
+  const {data:applicants} = useQuery({
+    queryKey: ['fetchJobData'],
+    queryFn: getApplicants
+  })
 
-  console.log("This is the data", data)
+
+
+
 
   const handleOpenSidebar = () => {
     setOpenSideBar(true)
@@ -96,9 +132,9 @@ const Client = () => {
                         </div>
                         {/* Contact Button */}
                         <div className="pt-2">
-                          <button className="px-6 py-2.5 text-sm font-bold bg-gray-700 dark:bg-gray-200 text-background rounded-lg shadow hover:bg-gray-800 dark:hover:bg-gray-400 transition-all">
+                          <Link href={`/profile/publicView/${val._id}-${val.role}`} className="px-6 py-2.5 text-sm font-bold bg-gray-700 dark:bg-gray-200 text-background rounded-lg shadow hover:bg-gray-800 dark:hover:bg-gray-400 transition-all">
                             Contact
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -139,20 +175,59 @@ const Client = () => {
             </div>
 
             {/* Recent Applicants Box */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
-              <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Recent Applicants</h3>
-              <div className="space-y-5">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 pb-4 border-b last:border-0 border-gray-100 dark:border-gray-700">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white">Applicant {i + 1}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Applied 2h ago</p>
-                    </div>
-                  </div>
-                ))}
+        {/* Recent Applicants Box */}
+{/* Recent Applicants Box */}
+<div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
+  <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Recent Applicants</h3>
+  <div className="space-y-5 overflow-y-auto max-h-[400px]">
+    {Array.isArray(applicants) && applicants.every(job => job.applicants.length === 0) ? (
+      <div className="text-center text-gray-500 dark:text-gray-400">
+        No applicants found.
+      </div>
+    ) : (
+      Array.isArray(applicants) &&
+      applicants.map((job, i:number) => (
+        job.applicants.length > 0 && (
+          <div
+            key={i}
+            className="pb-4 border-2 p-5 rounded-xl border-gray-100 dark:border-gray-700"
+          >
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              Job Title: <span className="font-medium">{job.title}</span>
+            </p>
+            {job.applicants.slice(0,2).map((applicant:Applicant, idx:number) => (
+              <div key={idx} className="flex items-center cursor-pointer gap-4 mb-3">
+                <div className="w-12 h-12 bg-gray-200  dark:bg-gray-700 rounded-full">
+                  <Image
+                    src={applicant.profilePicture}
+                    alt={applicant.name}
+                    width={50}
+                    height={50}
+                    className='rounded-full object-cover'
+                  />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    {applicant.name}
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {applicant.email}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Applied 2h ago
+                  </p>
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
+        )
+      ))
+    )}
+  </div>
+</div>
+
+
+
           </div>
         </div>
       </div>
@@ -223,23 +298,54 @@ const Client = () => {
               </div>
 
               {/* Recent Applicants Box */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
-                <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Recent Applicants</h3>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-4 pb-4 border-b last:border-0 border-gray-100 dark:border-gray-700"
-                    >
-                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">Applicant {i + 1}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Applied 2h ago</p>
-                      </div>
-                    </div>
-                  ))}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
+  <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Recent Applicants</h3>
+  <div className="space-y-5 overflow-y-auto max-h-[400px]">
+    {Array.isArray(applicants) && applicants.every(job => job.applicants.length === 0) ? (
+      <div className="text-center text-gray-500 dark:text-gray-400">
+        No applicants found.
+      </div>
+    ) : (
+      Array.isArray(applicants) &&
+      applicants.map((job, i:number) => (
+        job.applicants.length > 0 && (
+          <div
+            key={i}
+            className="pb-4 border-2 p-5 rounded-xl border-gray-100 dark:border-gray-700"
+          >
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              Job Title: <span className="font-medium">{job.title}</span>
+            </p>
+            {job.applicants.slice(0,2).map((applicant:Applicant, idx:number) => (
+              <div key={idx} className="flex items-center cursor-pointer gap-4 mb-3">
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full">
+                  <Image
+                    src={applicant.profilePicture}
+                    alt={applicant.name}
+                    width={50}
+                    height={50}
+                    className='rounded-full object-cover'
+                  />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    {applicant.name}
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {applicant.email}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Applied 2h ago
+                  </p>
                 </div>
               </div>
+            ))}
+          </div>
+        )
+      ))
+    )}
+  </div>
+</div>
             </div>
           </div>
         </>

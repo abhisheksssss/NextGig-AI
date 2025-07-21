@@ -127,7 +127,6 @@ const JobCards: React.FC<JobCardProps> = ({ _id,createdAt, description, skills, 
           type="button"
           onClick={() => {
             // Add your apply logic here
-            console.log('Applied for job:', title);
           }}
           className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >

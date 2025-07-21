@@ -40,7 +40,6 @@ const {data,isLoading,isError,error}=useQuery({
 
 
 
-console.log("THis is the data we have recieved",data)
 
 
 if(isLoading)return <p>Loading Jobs....</p>

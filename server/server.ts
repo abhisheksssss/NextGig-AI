@@ -64,7 +64,6 @@ const mesg = {
       ts: savedMessage.createdAt || Date.now(), // or savedMessage.timestamp if you store one
     };
 
-    console.log(mesg)
 
   io.to(roomId).emit('message', mesg);
 }
