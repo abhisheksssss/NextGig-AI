@@ -21,13 +21,15 @@ const {data,isLoading,isError,error}=useQuery(
     queryKey: ['chatRoom'],
     queryFn: getAllUsers,
       staleTime: 1000 * 60 * 5,        // 5 minutes "fresh"
-    refetchOnMount: false,            // don't refetch on remount
+                                       // don't refetch on remount
     refetchOnWindowFocus: false,      // ignore tab focus
     refetchOnReconnect: false,
   }
 )
+if(data){
+console.log("This is the data we get",data[0]?.chatWith.slice().reverse())
 
-
+}
 
   return (
 <div className="h-screen flex flex-col bg-background text-foreground">
@@ -61,7 +63,7 @@ const {data,isLoading,isError,error}=useQuery(
       ) : (
         data && data[0]?.chatWith?.length!==0  ?  
 
-        data[0].chatWith.map((val: IUser, i: number) => (
+        data[0].chatWith.slice().reverse().map((val: IUser, i: number) => (
           <div
   key={i}
   tabIndex={0}

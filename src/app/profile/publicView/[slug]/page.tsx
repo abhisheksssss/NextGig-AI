@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getParticularUserData, updateChatWith } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import SubLoader from "@/Component/subLoader";
+import PDFViewerBox from "@/Component/subComponents/resumePdf";
 // Type guards
 function isFreelancer(user: any): user is Ifreelancer {
   return user?.role === "Freelancer";
@@ -222,6 +223,10 @@ const { mutate: updateChatMutation, isPending } = useMutation({
                               </Badge>
                             ))}
                           </div>
+
+                           <div>
+          {(user.role==="Freelancer" && user.resumePdf ) && <PDFViewerBox pdfUrl={user?.resumePdf}/>}
+          </div>
                         </div>
                       </motion.div>
                     )}
@@ -321,7 +326,7 @@ const { mutate: updateChatMutation, isPending } = useMutation({
                 </div>
               </div>
               
-            {isPending===true?<div className='w-5 h-5 flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium object-cover  rounded-lg '>
+            {isPending===true?<div className='w-full h-5 flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium object-cover  rounded-lg '>
   <SubLoader/>
  </div> : (<button className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
   onClick={()=>

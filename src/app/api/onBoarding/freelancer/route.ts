@@ -51,6 +51,16 @@ function streamToNodeReadable(
   });
 }
 
+
+
+  function getResourceType(mime: string): "image" | "video" | "raw" {
+      if (!mime) return "raw";
+      if (mime.startsWith("image/")) return "image";
+      if (mime.startsWith("video/")) return "video";
+      return "raw";
+    }
+
+
 export async function POST(request: NextRequest) {
   await mongoDBConncection();
 
@@ -112,19 +122,15 @@ if(image){
       );
     }}
 
-    function getResourceType(mime: string): "image" | "video" | "raw" {
-      if (!mime) return "raw";
-      if (mime.startsWith("image/")) return "image";
-      if (mime.startsWith("video/")) return "video";
-      return "raw";
-    }
+  
 
     let resumeurl = null;
 
     if (body.role === "Freelancer") {
       const uploadedResume = await cloudinary.uploader.upload(resume.filepath, {
-        resource_type: getResourceType(resume.mimetype),
+        resource_type:   "raw", 
         folder: "resume",
+         type: "upload", 
       });
 
       resumeurl = uploadedResume;

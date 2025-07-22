@@ -153,30 +153,8 @@ const Client = () => {
               </Link>
             </div>
 
-            {/* Top Rated Freelancers Box */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
-              <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Top Rated Freelancers</h3>
-              <div className="space-y-5">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 pb-4 border-b last:border-0 border-gray-100 dark:border-gray-700">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow">
-                      ⭐
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white">Freelancer {i + 1}</h4>
-                      <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                        <span>5.0</span>
-                        <span className="text-yellow-500">★★★★★</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Applicants Box */}
-        {/* Recent Applicants Box */}
 {/* Recent Applicants Box */}
+
 <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
   <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Recent Applicants</h3>
   <div className="space-y-5 overflow-y-auto max-h-[400px]">
@@ -226,6 +204,31 @@ const Client = () => {
   </div>
 </div>
 
+            {/* Top Rated Freelancers Box */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
+              <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Top Rated Freelancers</h3>
+              <div className="space-y-5">
+                {[1, 2, 3].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 pb-4 border-b last:border-0 border-gray-100 dark:border-gray-700">
+                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow">
+                      ⭐
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">Freelancer {i + 1}</h4>
+                      <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                        <span>5.0</span>
+                        <span className="text-yellow-500">★★★★★</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+  
+
+
+
 
 
           </div>
@@ -273,32 +276,10 @@ const Client = () => {
                 </Link>
               </div>
 
-              {/* Top Rated Freelancers Box */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
-                <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Top Rated Freelancers</h3>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-4 pb-4 border-b last:border-0 border-gray-100 dark:border-gray-700"
-                    >
-                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow">
-                        ⭐
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">Freelancer {i + 1}</h4>
-                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                          <span>5.0</span>
-                          <span className="text-yellow-500">★★★★★</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Recent Applicants Box */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
+{/* Recent applicants */}
+
+<div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">
   <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Recent Applicants</h3>
   <div className="space-y-5 overflow-y-auto max-h-[400px]">
     {Array.isArray(applicants) && applicants.every(job => job.applicants.length === 0) ? (
@@ -346,6 +327,36 @@ const Client = () => {
     )}
   </div>
 </div>
+
+
+
+
+              {/* Top Rated Freelancers Box */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
+                <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Top Rated Freelancers</h3>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4 pb-4 border-b last:border-0 border-gray-100 dark:border-gray-700"
+                    >
+                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-2xl shadow">
+                        ⭐
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">Freelancer {i + 1}</h4>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                          <span>5.0</span>
+                          <span className="text-yellow-500">★★★★★</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Applicants Box */}
+
             </div>
           </div>
         </>

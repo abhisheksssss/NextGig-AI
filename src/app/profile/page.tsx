@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import {  useState } from "react";
 import { MapPin, Pencil, Share2, Mail, Phone, Globe, Briefcase, Languages, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/user";
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import PDFViewerBox from "@/Component/subComponents/resumePdf";
 
 // Type guards
 function isFreelancer(user: any): user is Ifreelancer {
@@ -24,6 +25,10 @@ function isClient(user: any): user is IClient {
 export default function ProfilePage() {
   const [showMore, setShowMore] = useState(false);
   const { user } = useUser();
+
+  console.log("This is the resume pdf link",(user as Ifreelancer)?.resumePdf)
+
+
 
   if (!user) return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
@@ -60,8 +65,8 @@ export default function ProfilePage() {
               <div className="relative group">
                 <Image
                   src={ (user as Ifreelancer | IClient)?.profilePicture || "/avatar.png"}
-                  width={96}
-                  height={96}
+                  width={500}
+                  height={500}
                   alt="Profile"
                   className="rounded-full object-cover border-4 border-primary/20 shadow-md"
                 />
@@ -214,6 +219,12 @@ export default function ProfilePage() {
                               </Badge>
                             ))}
                           </div>
+
+                          <div>
+                              <div>
+          {(user.role==="Freelancer" && user.resumePdf ) && <PDFViewerBox pdfUrl={user?.resumePdf}/>}
+          </div>
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -318,6 +329,7 @@ export default function ProfilePage() {
               </Button>
             </motion.div>
           </div>
+        
         </motion.div>
       )}
     </>
