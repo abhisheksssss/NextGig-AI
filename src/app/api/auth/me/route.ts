@@ -3,12 +3,12 @@ import User from "@/helper/model/user.model";
 import { getDataFromToken } from "@/helper/getDataFromToken";
 import { NextRequest, NextResponse } from "next/server";
 
-await mongoDBConncection();
 
 
 
 export async function GET(request:NextRequest){
     try {
+await mongoDBConncection();
 
         const userID =  getDataFromToken(request);
         const user= await User.findById(userID).select("-password -__v");
