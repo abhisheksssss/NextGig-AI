@@ -65,9 +65,9 @@ console.log("This is the data we get",data[0]?.chatWith.slice().reverse())
 
         data[0].chatWith.slice().reverse().map((val: IUser, i: number) => (
           <div
-  key={i}
-  tabIndex={0}
-  onClick={() =>
+    key={i}
+    tabIndex={0}
+    onClick={() =>
     setOtherUser({
       otherUserId: val?._id,
       username: val.name,

@@ -26,6 +26,7 @@ await mongoDBConncection();
     if (userRole === "Client") {
 
       const client = await Client.find({_id}).select("-__v");
+
       if (client) {
         return NextResponse.json({ data: client }, { status: 200 });
       } else {

@@ -6,6 +6,7 @@ import Freelancer from "@/helper/model/freelancer.model";
 import Client from "@/helper/model/Client.model";
 
 
+
 export async function GET(request: NextRequest) {
   try {
     const userID = getDataFromToken(request);
@@ -36,7 +37,6 @@ return NextResponse.json({ error:"User is not onboarded" }, { status: 200 });
       }
     }
     if (user.role === "Client") {
-
       const client = await Client.find({userId:userID}).select("-__v");
       if (client) {
         return NextResponse.json({ data: client }, { status: 200 });

@@ -7,6 +7,7 @@ import next from "next";
 import { Server } from "socket.io";
 import { mongoDBConncection } from "../src/app/dbConfig/db";
 import messageModel from "../src/helper/model/message.model.ts";
+import { initializeAgent } from "../src/service/GeminiAi.service.ts";
 const redisServer = new RedisMemoryServer();
 
 async function main() {
@@ -90,8 +91,10 @@ botNamespace.on("connection",(socket)=>{
     try {
       //question answer 
       console.log("This is userid",roomId)
-      console.log(query)
-      botNamespace.to(roomId).emit("message",{roomId,userId})
+ const aiRes= await initializeAgent(query);
+
+botNamespace.to(roomId).emit("message",{roomId,userId,aiRes})
+
     } catch (error) {
       console.log(error)
     }
