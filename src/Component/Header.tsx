@@ -96,7 +96,9 @@ const { setTheme } = useTheme();
             </NavigationMenuItem>
 
             <NavigationMenuItem>
-              <NavigationMenuTrigger>AI Chat</NavigationMenuTrigger>
+             <NavigationMenuLink href="/chatWithAi">
+        AI Chat
+      </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>

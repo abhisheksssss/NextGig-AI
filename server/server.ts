@@ -83,23 +83,42 @@ async function main() {
 
 //bot chat namespace
 
-const botNamespace=io.of("/bot");
+const botNamespace = io.of("/bot");
 
-botNamespace.on("connection",(socket)=>{
-   socket.on("join-room",(roomId)=>socket.join(roomId));
-   socket.on("message",async({roomId,query,userId})=>{
-    try {
-      //question answer 
-      console.log("This is userid",roomId)
- const aiRes= await initializeAgent(query);
-
-botNamespace.to(roomId).emit("message",{roomId,userId,aiRes})
-
-    } catch (error) {
-      console.log(error)
-    }
-   })
-})
+botNamespace.on("connection", (socket) => {
+    socket.on("join-room", (roomId) => {
+        if (roomId) {
+            socket.join(roomId);
+        }
+    });
+    
+    socket.on("message", async ({ roomId, query, userId }) => {
+        try {
+            if (!roomId || !query || !userId) {
+                return;
+            }
+            
+            // Get AI response
+            const aiResponse = await initializeAgent(query);
+            
+            // Send response in the format your client expects
+            botNamespace.to(roomId).emit("message", {
+                roomId,
+                sender: userId,
+                aires: aiResponse?.aiRes || null
+            });
+            
+        } catch (error) {
+            console.log(error);
+            // Send error response
+            botNamespace.to(roomId).emit("message", {
+                roomId,
+                sender: userId,
+                aires: "Sorry, I couldn't process your request."
+            });
+        }
+    });
+});
 
 
 
