@@ -26,7 +26,7 @@ return NextResponse.json({ error:"User is not onboarded" }, { status: 200 });
 }
 
     if (user.role === "Freelancer") {
-      const freelancer = await Freelancer.find({userId:userID}).select("-__v");
+      const freelancer = await Freelancer.find({userId:userID}).select("-__v").populate("appliedFor");
       console.log(freelancer)
       if (freelancer) {
         return NextResponse.json({ data: freelancer }, { status: 200 });

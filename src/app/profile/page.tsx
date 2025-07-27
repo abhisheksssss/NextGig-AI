@@ -65,8 +65,8 @@ export default function ProfilePage() {
               <div className="relative group">
                 <Image
                   src={ (user as Ifreelancer | IClient)?.profilePicture || "/avatar.png"}
-                  width={500}
-                  height={500}
+                  width={100}
+                  height={100}
                   alt="Profile"
                   className="rounded-full object-cover border-4 border-primary/20 shadow-md"
                 />
@@ -324,9 +324,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               
-              <Button className="w-full mt-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary">
-                Contact {user.name}
-              </Button>
+              
             </motion.div>
           </div>
         

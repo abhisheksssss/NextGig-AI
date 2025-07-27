@@ -51,7 +51,7 @@ applicants:[{
 },{timestamps:true})
 
 
-const postJob = models.PostJob || model("PostJob",postJobSchema)
+const PostJob = models.PostJob || model("PostJob",postJobSchema)
 
 
-export default postJob
+export default PostJob

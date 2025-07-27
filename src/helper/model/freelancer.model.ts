@@ -1,5 +1,5 @@
 import mongoose, { model, Schema,models  } from "mongoose";
-
+import "./postJob"; 
 
 export interface Ifreelancer {
     userId: mongoose.Schema.Types.ObjectId;
@@ -26,6 +26,7 @@ export interface Ifreelancer {
     updatedAt?: Date;
     resumePdf?:string;
     onBoarding:boolean;
+    appliedFor?:Schema.Types.ObjectId
 }
 
 
@@ -113,7 +114,11 @@ location: {
     type:Boolean,
 default:true,
 require:true
-}
+},
+appliedFor:[{
+    type:Schema.Types.ObjectId,
+    ref:"PostJob",
+  }]
 }, { timestamps: true });
 
 

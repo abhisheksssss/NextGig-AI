@@ -12,6 +12,19 @@ export interface IUser {
   updatedAt: string; // or Date if you prefer
   onBoarding:boolean
 }
+export interface IAppliedJob {
+  _id: string;
+  clientId: string;
+  title: string;
+  description: string;
+  skills: string[];
+  applicants: string[];
+  budget: number;
+  createdAt: string;
+  updatedAt: string;
+  status: boolean;
+  __v?: number;
+}
 
 export interface Ifreelancer {
   _id:string
@@ -38,7 +51,8 @@ export interface Ifreelancer {
     createdAt?: Date;
     updatedAt?: Date;
     resumePdf?:string;
-     onBoarding:boolean
+     onBoarding:boolean;
+  appliedFor: IAppliedJob[];
 }
 
 
@@ -69,6 +83,7 @@ export interface IClient {
 interface TokenContextType {
   user:  IUser|Ifreelancer|IClient| null;
   setUser: (user: IUser|Ifreelancer|IClient | null) => void;
+    getUser: () => Promise<void>;
 }
 
 const UserContext= createContext<TokenContextType|undefined>(undefined);
@@ -77,8 +92,7 @@ const UserProvider = ({children}:{children: React.ReactNode}) => {
 
     const [user,setUser]=useState<IUser|Ifreelancer|IClient|null>(null)
 
-
-    const getUser=async()=>{
+  const getUser=async()=>{
      try {
         const data=await axiosInstance.get("/api/auth/me");
 
@@ -103,7 +117,7 @@ getUser()
 
 
   return (
-    <UserContext.Provider value={{user,setUser}}>
+    <UserContext.Provider value={{user,setUser,getUser}}>
     {children}
     </UserContext.Provider>
   )

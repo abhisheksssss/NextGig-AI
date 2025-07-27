@@ -84,7 +84,7 @@ if (data && data.applicants.includes((user as Ifreelancer | IClient)?._id)) {
   setDisableButton(true);
 }
 }
-},[data])
+},[data,user])
 
 
 

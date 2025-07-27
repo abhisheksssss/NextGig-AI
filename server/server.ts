@@ -97,9 +97,8 @@ botNamespace.on("connection", (socket) => {
             if (!roomId || !query || !userId) {
                 return;
             }
-            
             // Get AI response
-            const aiResponse = await initializeAgent(query);
+            const aiResponse = await initializeAgent(query,userId);
             
             // Send response in the format your client expects
             botNamespace.to(roomId).emit("message", {

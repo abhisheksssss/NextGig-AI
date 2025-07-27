@@ -26,15 +26,26 @@ const {data}= body;
 await mongoDBConncection();
 
 
-const fetchFreelancerId=await Freelancer.find({userId:_id}).select("_id")
+
+const fetchFreelancerUpdatedId = await Freelancer.findOneAndUpdate(
+  { userId: _id },
+  {
+    $addToSet: { appliedFor: data }
+  },
+  { new: true }
+).select("_id");
+
+
 
 
 
 const updateChatWith= await postJob.findByIdAndUpdate(data,{
-    $addToSet:{applicants:fetchFreelancerId}
+    $addToSet:{applicants:fetchFreelancerUpdatedId._id}
 }       , // Prevents duplicate entries
    {new:true} // returns the updated document
 )
+
+
 
 if(updateChatWith.lenght===0){
     return new Error("Error in updating fields")
