@@ -2,7 +2,7 @@
 import Loader from "@/Component/loader";
 import GetBack from "@/Component/subComponents/getBack";
 import { IClient, useUser } from "@/context/user";
-import { createContactApi, getApplicants } from "@/lib/api";
+import { createContactApi, getApplicants, removeApplicant } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -48,40 +48,66 @@ const Applicants = () => {
   const [createContactModal, setCreateContactModal] = useState("");
 
   const [particularJobId, setParticularJobId] = useState("");
-  
-const queryClient=useQueryClient();
+
+  const queryClient = useQueryClient();
 
   const { data: applicants } = useQuery({
     queryKey: ["fetchJobData"],
     queryFn: getApplicants,
   });
 
-  console.log(createContactModal)
+  console.log(createContactModal);
 
+  const {
+    mutate: createContact,
+    isPending,
+    error,
+  } = useMutation({
+    mutationKey: ["createContact"],
+    mutationFn: ({
+      freelancerId,
+      clientId,
+      jobId,
+      budget,
+    }: {
+      freelancerId: string;
+      clientId: string;
+      jobId: string;
+      budget: string;
+    }) => createContactApi(freelancerId, clientId, jobId, budget),
+    onSuccess: (data) => {
+      toast.success("SuccessFully Hiered");
+      queryClient.invalidateQueries({ queryKey: ["fetchJobData"] });
+      router.push(`/createdContact/${data._id}`);
+    },
+  });
 
-const { mutate: createContact, isPending, error } = useMutation({
-  mutationKey: ["createContact"],
-  mutationFn: ({
-    freelancerId,
-    clientId,
-    jobId,
-    budget,
-  }: {
-    freelancerId: string;
-    clientId: string;
-    jobId: string;
-    budget: string;
-  }) => createContactApi(freelancerId, clientId, jobId, budget),
-  onSuccess:(data)=>{
-    toast.success("SuccessFully Hiered")
-queryClient.invalidateQueries({ queryKey: ["fetchJobData"] });
-    router.push(`/createdContact/${data._id}`)
+  const {
+    mutate: removeApplicants,
+    isPending: isRemoving,
+    error: errorInRemoving,
+  } = useMutation({
+    mutationKey: ["removeApplicants"],
+    mutationFn: ({
+      freelancerId,
+      jobId,
+    }: {
+      freelancerId: string;
+      jobId: string;
+    }) => removeApplicant(freelancerId, jobId),
+    onSuccess: () => {
+      toast.success("Deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["fetchJobData"] });
+    },
+  });
+
+  if (errorInRemoving) {
+    toast.error("Error in removing");
   }
-});
 
-if(error){
-  toast.error("Error is Hiring")
-}
+  if (error) {
+    toast.error("Error is Hiring");
+  }
 
   if (!applicants || !user) {
     return (
@@ -185,18 +211,19 @@ if(error){
                       <div className="flex flex-col gap-2 overflow-y-auto max-h-64">
                         {/* applicants */}
                         <h3 className="text-lg font-bold">Applicants</h3>
-                        {m.applicants.map((a, idx: number) => (
+                  {m.applicants.length>0?        m.applicants.map((a, idx: number) => (
                           <div
                             key={idx}
                             className="dark:bg-gray-700 shadow-xl border-2 p-4 rounded-xl flex gap-5 items-center cursor-pointer justify-between"
-                           
                           >
-                            <div className="rounded-xl flex gap-5 items-center cursor-pointer "
-                             onClick={() =>
-                              router.push(
-                                `/profile/publicView/${a._id}-${a.role}`
-                              )
-                            }>
+                            <div
+                              className="rounded-xl flex gap-5 items-center cursor-pointer "
+                              onClick={() =>
+                                router.push(
+                                  `/profile/publicView/${a._id}-${a.role}`
+                                )
+                              }
+                            >
                               <div>
                                 <Image
                                   src={a.profilePicture}
@@ -234,92 +261,138 @@ if(error){
                             </div>
 
                             <div className="flex flex-col gap-5">
-                              <button className="bg-green-500 p-2 max-w-xl rounded-xl px-4"
-                              onClick={()=>setCreateContactModal(`${m._id}-${a._id}-${m.budget}-${m.clientId}-${a.name}`)}
+                              <button
+                                className="bg-green-500 p-2 max-w-xl rounded-xl px-4"
+                                onClick={() =>
+                                  setCreateContactModal(
+                                    `${m._id}-${a._id}-${m.budget}-${m.clientId}-${a.name}`
+                                  )
+                                }
                               >
                                 Hire
                               </button>
-                              <button className="bg-red-500 p-2 max-w-xl rounded-xl px-4">
-                                Reject
-                              </button>
+                              {isRemoving ? (
+                                <button
+                                  disabled
+                                  className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white flex items-center justify-center gap-2"
+                                >
+                                  <svg
+                                    className="animate-spin h-5 w-5 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                    ></path>
+                                  </svg>
+                                  Processing...
+                                </button>
+                              ) : (
+                                <button
+                                  className="bg-red-500 p-2 max-w-xl rounded-xl px-4"
+                                  onClick={() => {
+
+
+                              removeApplicants({freelancerId:a._id,jobId: m._id});
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                              )}
                             </div>
-
-
                           </div>
-                        ))}
+                        )):(
+                          <div>
+                            <p>No applicants found</p>
+                          </div>
+                        )}
                       </div>
-                       
                     </div>
                   )
               )}
             </div>
 
+            {createContactModal.length > 0 && (
+              <div className="fixed z-[200] inset-0 bg-black/50 flex items-center justify-center px-4">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md transition-all duration-300">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Hire {createContactModal.split("-")[4]} ?
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+                    Are you sure you want to hire{" "}
+                    <span className="font-medium">
+                      {createContactModal.split("-")[4]}
+                    </span>{" "}
+                    for this job? This will create a contract and notify the
+                    freelancer.
+                  </p>
 
-  {createContactModal.length>0 && (
-  <div className="fixed z-[200] inset-0 bg-black/50 flex items-center justify-center px-4">
-    <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md transition-all duration-300">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-        Hire {createContactModal.split("-")[4]} ?
-      </h2>
-      <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-        Are you sure you want to hire <span className="font-medium">{createContactModal.split("-")[4]}</span> for this job? This will create a contract and notify the freelancer.
-      </p>
-
-      <div className="flex justify-end gap-3">
-        <button
-          className="px-4 py-2 text-sm rounded-lg border dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-      onClick={()=>setCreateContactModal("")}
-      >
-          Cancel
-        </button>
-{isPending ? (
-  <button
-    disabled
-    className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center justify-center gap-2"
-  >
-    <svg
-      className="animate-spin h-5 w-5 text-white"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      ></circle>
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-      ></path>
-    </svg>
-    Processing...
-  </button>
-) : (
-  <button
-    className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-    onClick={() => {
-      const [jobId, freelancerId, budget, clientId] = createContactModal.split("-");
-      createContact({
-        freelancerId,
-        jobId,
-        budget,
-        clientId,
-      });
-    }}
-  >
-    Hire Freelancer
-  </button>
-)}    
-      </div>
-    </div>
-  </div>
-)}
-         
+                  <div className="flex justify-end gap-3">
+                    <button
+                      className="px-4 py-2 text-sm rounded-lg border dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => setCreateContactModal("")}
+                    >
+                      Cancel
+                    </button>
+                    {isPending ? (
+                      <button
+                        disabled
+                        className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white flex items-center justify-center gap-2"
+                      >
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          ></path>
+                        </svg>
+                        Processing...
+                      </button>
+                    ) : (
+                      <button
+                        className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                        onClick={() => {
+                          const [jobId, freelancerId, budget, clientId] =
+                            createContactModal.split("-");
+                          createContact({
+                            freelancerId,
+                            jobId,
+                            budget,
+                            clientId,
+                          });
+                        }}
+                      >
+                        Hire Freelancer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-800">

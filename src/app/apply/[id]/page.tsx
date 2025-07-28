@@ -95,6 +95,7 @@ const {mutate:applyForJobMutation,isPending:applyingForJob}=useMutation({
   onSuccess:(data)=>{
     toast.success(data);
     setDisableButton(true)
+    queryClient.invalidateQueries({queryKey:["fetchJobData"]})
   }
 })
 

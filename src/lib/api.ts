@@ -140,3 +140,21 @@ console.log(res.data?.data)
     throw error;
   }
 };
+
+
+export const removeApplicant=async(freelancerId:string,jobId:string)=>{
+try {
+console.log(freelancerId)
+console.log(jobId)
+
+ const res= await axiosInstance.put(`/api/createContect/removeApplicant`,{
+        freelancerId,
+        jobId,
+ })
+ console.log(res.data)
+return res.data?.data
+
+} catch (error) {
+    console.log(error)
+}
+}
