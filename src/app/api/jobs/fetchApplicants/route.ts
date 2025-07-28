@@ -14,7 +14,7 @@ await mongoDBConncection();
 if(!clientId){
 throw new Error("unAuthorize user")
 }
-const getApplicants= await postJob.find({clientId:clientId[0]._id}).select("-_id").populate("applicants")
+const getApplicants= await postJob.find({clientId:clientId[0]._id}).populate("applicants")
 
 
 if(getApplicants.length>0){

@@ -190,12 +190,10 @@ const { setTheme } = useTheme();
         >
           Profile
         </Link>
-        <Link
-          href="/applications"
-          className="px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-       {user.role==="Freelancer"?<Link href={"/applications"}>Applied For</Link>:<Link href={"/applications/applicants"}>Posted Jobs</Link>}   
-        </Link>
+
+       {user.role==="Freelancer"?
+       <Link href={"/applications"}         className="px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800">Applied For</Link>:
+       <Link href={"/applications/applicants"}         className="px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800">Posted Jobs</Link>}   
 
 
         <button

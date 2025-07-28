@@ -271,9 +271,12 @@ updateChatMutation(data?.clientId?.userId)
   >
                 <MessageCircleMore />   <p>send message</p>   
                   </button>)}
-  <button className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'>
+  <a     href={`https://mail.google.com/mail/?view=cm&to=${data?.clientId.contactdetails.email}&su=Hello&body=Let's%20talk`}
+  target="_blank"
+  rel="noopener noreferrer"
+   className='w-full flex items-center justify-center gap-2 py-3 mt-4 text-base font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'>
                <Send />    <p>send Email</p> 
-                  </button>
+                  </a>
        
      </div>
 

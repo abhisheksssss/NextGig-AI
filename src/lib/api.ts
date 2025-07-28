@@ -110,6 +110,7 @@ export const getApplicants=async()=>{
 }
 
 
+
 export const getParticularUserData=async(userId:string,userRole:string)=>{
     try {
         const res= await axiosInstance.get(`api/auth/getParticularUserData?userId=${userId}&userRole=${userRole}`)
@@ -118,3 +119,24 @@ export const getParticularUserData=async(userId:string,userRole:string)=>{
         console.log(error)
     }
 }
+
+export const createContactApi = async (
+  freelancerId: string,
+  clientId: string,
+  jobId: string,
+  budget: string
+) => {
+  try {
+    const res = await axiosInstance.post(`/api/createContect`, {
+      freelancerId,
+      clientId,
+     projectId:jobId,
+      budget,
+    });
+console.log(res.data?.data)
+    return res.data?.data; // Safely access data
+  } catch (error) {
+    console.error("Error creating contract:", error);
+    throw error;
+  }
+};
