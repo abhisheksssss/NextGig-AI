@@ -4,17 +4,13 @@ import GetBack from '@/Component/subComponents/getBack';
 import { Ifreelancer, useUser } from '@/context/user';
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation';
-const ApplicationPages = () => {
-
-const{user,getUser}=useUser();
-const router=useRouter();
 
 
-useEffect(()=>{
-    getUser()
-},[user])
 
-function timeAgo(dataString:string):string{
+
+
+
+export function timeAgo(dataString:string):string{
 const now=new Date();
 const date=new Date(dataString)
 const second= Math.floor((now.getTime()-date.getTime())/1000)
@@ -40,6 +36,21 @@ const rtf = new Intl.RelativeTimeFormat("en",{numeric:"auto"})
 
 
 }
+
+
+
+
+
+const ApplicationPages = () => {
+
+const{user,getUser}=useUser();
+const router=useRouter();
+
+
+useEffect(()=>{
+    getUser()
+},[user])
+
 
 
 

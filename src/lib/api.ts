@@ -158,3 +158,24 @@ return res.data?.data
     console.log(error)
 }
 }
+
+
+export const fetchContactDetails=async(projectId:string)=>{
+    try {
+        const res= await axiosInstance.get(`/api/createContect/getContactDetails?projectId=${projectId}`)
+        return res?.data?.data
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
+export const fetchContacts=async(userId:string,role:string)=>{
+    try {
+        const res= await axiosInstance.get(`/api/createContect/fetchUserContects?_Id=${userId}&role=${role}`)
+        
+             return res?.data?.data
+    } catch (error) {
+          console.log(error)
+    }
+}

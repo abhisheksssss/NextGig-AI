@@ -96,7 +96,7 @@ const Applicants = () => {
       jobId: string;
     }) => removeApplicant(freelancerId, jobId),
     onSuccess: () => {
-      toast.success("Deleted successfully");
+      toast.success("removed successfully");
       queryClient.invalidateQueries({ queryKey: ["fetchJobData"] });
     },
   });
