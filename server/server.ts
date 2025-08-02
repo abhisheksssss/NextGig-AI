@@ -98,7 +98,7 @@ botNamespace.on("connection", (socket) => {
                 return;
             }
             // Get AI response
-            const aiResponse = await initializeAgent(query,userId);
+            const aiResponse = await initializeAgent(query,userId,`session-${roomId}-${new Date().toDateString()}`);
             
             // Send response in the format your client expects
             botNamespace.to(roomId).emit("message", {

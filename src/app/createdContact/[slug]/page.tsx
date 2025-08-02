@@ -177,7 +177,7 @@ if(user){
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Fields of Interest</h4>
                     <div className="flex flex-wrap gap-2">
-                      {client?.Field?.map((field, index:number) => (
+                      {client?.Field?.map((field:string, index:number) => (
                         <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md">
                           {field.trim()}
                         </span>
@@ -242,7 +242,7 @@ if(user){
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Languages</h4>
                     <div className="flex flex-wrap gap-2">
-                      {freelancer?.languages?.map((lang, index:number) => (
+                      {freelancer?.languages?.map((lang:string[], index:number) => (
                         <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-md">
                           {lang}
                         </span>
@@ -291,7 +291,7 @@ if(user){
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Required Skills</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {job?.skills?.map((skill, index:number) => (
+                  {job?.skills?.map((skill:string[], index:number) => (
                     <span key={index} className="inline-block px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full mr-2 mb-2">
                       {skill}
                     </span>
@@ -315,7 +315,7 @@ if(user){
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Technical Skills</h4>
                 <div className="space-y-2">
-                  {freelancer?.Skills?.map((skill, index:number) => {
+                  {freelancer?.Skills?.map((skill:string[], index:number) => {
                     const isRequired = job?.skills?.includes(skill);
                     return (
                       <span 

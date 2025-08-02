@@ -179,3 +179,38 @@ export const fetchContacts=async(userId:string,role:string)=>{
           console.log(error)
     }
 }
+
+
+export const fetchGoogleData=async(query:string)=>{
+
+    const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_KEY;
+  const SEARCH_ENGINE_ID = process.env.NEXT_PUBLIC_GOOGLE_CX;
+
+   if (!GOOGLE_API_KEY || !SEARCH_ENGINE_ID) {
+        throw new Error('Missing API key or Search Engine ID');
+      }
+
+      try {
+        const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${SEARCH_ENGINE_ID}&key=${GOOGLE_API_KEY}`;
+        console.log('Request URL:', url); // Debug log
+        
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('API Response:', errorText); // Debug log
+          throw new Error(`API Error: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        if (data.error) {
+          console.error('API Error Response:', data.error); // Debug log
+          throw new Error(data.error.message || 'Google API Error');
+        }
+
+        return data;
+      } catch (err) {
+        console.error('Google Search Error:', err);
+        throw err;
+      } 
+}

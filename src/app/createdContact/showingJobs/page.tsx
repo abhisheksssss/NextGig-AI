@@ -7,17 +7,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation';
 import React from 'react'
 
-
-
-// Contact details interface
-// Contact details interface
+// [Keep all your existing interfaces as they are]
 interface ContactDetails {
   email: string;
   phone: string;
 }
 
-// Client reference interface (populated from clientId)
-interface ClientReference {
+export interface ClientReference {
   contactdetails: ContactDetails;
   _id: string;
   userId: string;
@@ -36,8 +32,7 @@ interface ClientReference {
   __v?: number;
 }
 
-// Freelancer reference interface (populated from freelancerId)
-interface FreelancerReference {
+ export interface FreelancerReference {
   contactdetails: ContactDetails;
   _id: string;
   userId: string;
@@ -64,8 +59,7 @@ interface FreelancerReference {
   __v?: number;
 }
 
-// Job reference interface (populated from jobId)
-interface JobReference {
+export interface JobReference {
   _id: string;
   clientId: string;
   title: string;
@@ -80,8 +74,7 @@ interface JobReference {
   __v?: number;
 }
 
-// Main contract/project interface
-interface ProjectContract {
+export interface ProjectContract {
   amount: number;
   clientId: ClientReference;
   createdAt: string;
@@ -95,77 +88,85 @@ interface ProjectContract {
   _id: string;
 }
 
+export const CreatedContact = () => {
+  const { user } = useUser();
+  const router = useRouter();
 
-const CreatedContact = () => {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['fetchContactDetails', user?._id],
+    queryFn: () => {
+      if (user?._id && user?.role) {
+        return fetchContacts(user?._id, user?.role)
+      }
+    },
+    enabled: !!user?._id,
+  });
 
-const {user}=useUser();
+  if (isLoading || !user) {
+    return (
+      <div className='flex items-center justify-center w-screen h-screen'>
+        <Loader />
+      </div>
+    )
+  }
 
-const router=useRouter();
-
-
-const { data, isLoading, isError } = useQuery({
-  queryKey: ['fetchContactDetails', user?._id], // include freelancerId in queryKey
-  queryFn: () => {
-    if(user?._id,user?.role){
-   return fetchContacts(user?._id,user?.role)}
-    }  ,// correct arrow function syntax
-  enabled: !!user?._id, // optional: only run query if freelancerId exists
-});
-
-console.log(data)
-
-if(isLoading || !user){
-  return (
-    <div className=' flex items-center justify-center w-screeen h-screen'>
-      <Loader/>
-    </div>
-  )
-}
-
-if(isError){
-     return (
-    <div className=' flex items-center justify-center w-screeen h-screen'>
-      <p>Internal server Error</p>
-    </div>
-  )
-}
-
+  if (isError) {
+    return (
+      <div className='flex items-center justify-center w-screen h-screen'>
+        <p>Internal server Error</p>
+      </div>
+    )
+  }
 
   return (
-       <div className='w-screen h-screen'>
-<div>
-    <GetBack/>
-</div>
-<div className='border-2 rounded-xl container mx-auto max-h-[85%] h-[85%] mt-5 overflow-y-auto'>
-  <h3 className='font-bold text-xl pl-8 pt-5'>Contracts</h3>
-{
- user.role==="Freelancer"?    
- (
-    data.map((m:ProjectContract,idx:number)=>(
-        <div key={idx} onClick={()=>{router.push(`../createdContact/${m._id}`)}} className='m-4 p-4 border-2 cursor-pointer shadow-xl rounded-2xl flex flex-col gap-2 dark:bg-gray-900 '>
-             <h2 className='font-bold text-lg'>{m.jobId.title}</h2>
-             <p className='line-clamp-3 mt-1 text-sm'>{m.clientId.name}</p>
-             <p className='text-sm dark:text-gray-400 mt-1'>Budget:-{m.jobId.budget}$</p>
-         
-             <p className='dark:text-gray-200'>Contract created At : {m.createdAt.slice(0,10)} </p>
-             <p></p>
+    <div className='w-screen h-screen'>
+      <div>
+        <GetBack />
+      </div>
+      
+      <div className='container mx-auto max-h-[85%] h-[85%] mt-5 overflow-y-auto px-4'>
+        <h3 className='font-bold text-2xl mb-6 text-gray-800 dark:text-white'>My Contracts</h3>
+        
+        <div className='space-y-4'>
+          {data?.map((contract: ProjectContract) => (
+            <div
+              key={contract._id}
+              onClick={() => { router.push(`../createdContact/${contract._id}`) }}
+              className='p-5 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700'
+            >
+              <div className="flex justify-between items-start mb-3">
+                <h2 className='font-semibold text-lg text-gray-900 dark:text-white'>
+                  {contract.jobId.title}
+                </h2>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  contract.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                  contract.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                  contract.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {contract.status}
+                </span>
+              </div>
+              
+              <p className='text-sm text-gray-600 dark:text-gray-400 mb-2'>
+                {user.role === "Freelancer" ? 
+                  `Client: ${contract.clientId.name}` : 
+                  `Freelancer: ${contract.freelancerId.name}`
+                }
+              </p>
+              
+              <div className="flex justify-between items-center text-sm">
+                <span className='font-medium text-green-600 dark:text-green-400'>
+                  Budget: ${contract.jobId.budget}
+                </span>
+                <span className='text-gray-500 dark:text-gray-400'>
+                  {new Date(contract.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
-    ))
- )
- :(
-     data.map((m:ProjectContract,idx:number)=>(
-        <div key={idx} onClick={()=>{router.push(`../createdContact/${m._id}`)}} className='m-4 p-4 border-2 cursor-pointer shadow-xl rounded-2xl flex flex-col gap-2 dark:bg-gray-900 '>
-             <h2 className='font-bold text-lg'>{m.jobId.title}</h2>
-             <p className='line-clamp-3 mt-1 text-sm'>{m.freelancerId.name}</p>
-             <p className='text-sm dark:text-gray-400 mt-1'>Budget:-{m.jobId.budget}$</p>
-         
-             <p className='dark:text-gray-200'>Contract created At : {m.createdAt.slice(0,10)} </p>
-             <p></p>
-        </div>
-    ))
-  )
-}
-</div>
+      </div>
     </div>
   )
 }
