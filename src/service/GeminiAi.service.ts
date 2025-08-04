@@ -632,7 +632,7 @@ const data1 = answer.articles.slice(0, 4).map((m: Article) => ({
 const data2 = answer1.articles.slice(0, 4).map((m: Article) => ({
   title: m.title,
   description: m.description,
-  content: m.content,
+  content: m.content,  
 }));
 
 const data3 = fetchData2.items.slice(0, 4).map((m: CustomSearchResult) => ({
