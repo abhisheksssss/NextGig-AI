@@ -1,7 +1,17 @@
 "use client"
 
-import { Header } from "@/Component/Header";
+
+
+
+
 import Main from "@/Component/Main";
+import dynamic from "next/dynamic";
+
+
+const Header = dynamic(() => import('@/Component/Header').then(mod => ({ default: mod.Header })), {
+  ssr:  true // or false if you don't want server-side rendering
+});
+
 
 
 
@@ -11,15 +21,14 @@ export default function Home() {
 
   return (
     <>
-        <div className="relative ">
+        <div className="relative  ">
     <div className=" fixed z-10 w-full ">
     <Header />
     </div>
-      <div className="w-full absolute">
-        <div className="w-full">
+      <div className="w-full absolute ">
+        <div className="w-full ">
           <Main/>
         </div>
-        <div></div>
       </div>
     
   </div>

@@ -11,7 +11,8 @@ import React, {
   useCallback,
   useMemo,
   FC,
-  KeyboardEvent
+  KeyboardEvent,
+  useRef
 } from "react";
 import useSocket2 from "@/hooks/userSocket2";
 import { Send } from "lucide-react";
@@ -25,6 +26,7 @@ interface Message {
   query: string;
   sender: string;
   aires: string | null;
+  createdAt?: number; // Added timestamp
 }
 
 interface AlignmentBlock {
@@ -140,12 +142,51 @@ const parseAIResponse = (text: string): ParsedResponse => {
 };
 
 /* ─────────────────────────────────────────────
+   Typing Animation Component
+────────────────────────────────────────────── */
+const TypingBubble: FC = () => (
+  <div className="flex justify-start">
+    <div className="bg-muted px-4 py-3 rounded-lg max-w-[90%] flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">AI is thinking</span>
+      <div className="flex items-center gap-1">
+        <style jsx>{`
+          @keyframes blink {
+            0% { opacity: 0.2; }
+            20% { opacity: 1; }
+            100% { opacity: 0.2; }
+          }
+          .typing-dot {
+            animation: blink 1.4s infinite both;
+          }
+          .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+          }
+          .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+          }
+        `}</style>
+        <span className="typing-dot inline-block w-1.5 h-1.5 rounded-full bg-foreground/60"></span>
+        <span className="typing-dot inline-block w-1.5 h-1.5 rounded-full bg-foreground/60"></span>
+        <span className="typing-dot inline-block w-1.5 h-1.5 rounded-full bg-foreground/60"></span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─────────────────────────────────────────────
    Main component
 ────────────────────────────────────────────── */
 const ChatWithAi: FC = () => {
   const { user } = useUser();
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  // New state for AI thinking indicator
+  const [isThinking, setIsThinking] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  
+  // Ref for auto-scroll
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   /* Memoised user & roomId */
   const userData = useMemo(() => user as IClient | Ifreelancer, [user]);
@@ -156,32 +197,53 @@ const ChatWithAi: FC = () => {
 
   const socketRef = useSocket2(roomId || "");
 
+  // Auto-scroll to bottom
+  const scrollToBottom = useCallback(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isThinking, scrollToBottom]);
+
   /* Socket listeners */
   useEffect(() => {
     const s = socketRef.current;
     if (!s || !roomId) return;
 
-    const handler = (msg: Message) => setMessages((p) => [...p, msg]);
+    const handler = (msg: Message) => {
+      setMessages((p) => [...p, msg]);
+      setIsThinking(false); // Hide thinking indicator when AI responds
+      setIsSending(false);
+    };
+    
     s.on("message", handler);
     return () => void s.off("message", handler);
   }, [roomId, socketRef]);
 
-  /* Send */
+  /* Send with thinking state */
   const send = useCallback(() => {
     if (!query.trim() || !socketRef.current || !userData?.userId) return;
+    
+    const trimmed = query.trim();
     const msg: Message = {
       roomId: roomId!,
-      query: query.trim(),
+      query: trimmed,
       sender: userData.userId,
-      aires: null
+      aires: null,
+      createdAt: Date.now()
     };
+    
     setMessages((p) => [...p, msg]);
+    setQuery("");
+    setIsThinking(true); // Show thinking indicator
+    setIsSending(true);
+    
     socketRef.current.emit("message", {
       roomId,
       userId: userData,
-      query: query.trim()
+      query: trimmed
     });
-    setQuery("");
   }, [query, roomId, socketRef, userData]);
 
   const onKey = useCallback(
@@ -193,6 +255,12 @@ const ChatWithAi: FC = () => {
     },
     [send]
   );
+
+  // Helper for timestamps
+  const fmtTime = (timestamp?: number) => {
+    const date = timestamp ? new Date(timestamp) : new Date();
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
 
   if (!userData?.userId)
     return (
@@ -284,41 +352,65 @@ const ChatWithAi: FC = () => {
       <div className="flex flex-col justify-between h-[90%] container mx-auto">
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 border-2 border-border rounded-xl shadow-2xl hide-scrollbar bg-card">
-          {messages.length === 0 ? (
-            <div className="text-muted-foreground flex justify-center items-center">
-              Start a conversation with our AI
+          {messages.length === 0 && !isThinking ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center max-w-sm text-muted-foreground">
+                <div className="mb-3 text-4xl">🤖</div>
+                <div className="font-medium text-lg mb-2">Welcome to AI Chat</div>
+                <div className="text-sm">
+                  Ask me anything about your projects, skills, or get personalized recommendations.
+                </div>
+              </div>
             </div>
           ) : (
-            messages.map((m, i) => (
-              <div key={i} className="space-y-2">
-                {/* user bubble */}
-                {m.query && (
-                  <div className="flex justify-end">
-                    <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg max-w-[80%]">
-                      {m.query}
+            <>
+              {messages.map((m, i) => (
+                <div key={i} className="space-y-2">
+                  {/* user bubble */}
+                  {m.query && (
+                    <div className="flex justify-end">
+                      <div className="space-y-1">
+                        <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg max-w-[80%] shadow-sm">
+                          {m.query}
+                        </div>
+                        <div className="text-xs text-muted-foreground text-right pr-2">
+                          {fmtTime(m.createdAt)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* ai bubble */}
-                {m.aires && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted px-4 py-2 rounded-lg max-w-[90%]">
-                      {(() => {
-                        const parsed = parseAIResponse(m.aires);
-                        if (parsed.type === "unstructured")
-                          return (
-                            <pre className="whitespace-pre-wrap text-sm text-foreground">
-                              {parsed.content}
-                            </pre>
-                          );
-                        return <StructuredBlock data={parsed.data} />;
-                      })()}
+                  {/* ai bubble */}
+                  {m.aires && (
+                    <div className="flex justify-start">
+                      <div className="space-y-1 max-w-[90%]">
+                        <div className="bg-muted px-4 py-2 rounded-lg shadow-sm">
+                          {(() => {
+                            const parsed = parseAIResponse(m.aires);
+                            if (parsed.type === "unstructured")
+                              return (
+                                <pre className="whitespace-pre-wrap text-sm text-foreground">
+                                  {parsed.content}
+                                </pre>
+                              );
+                            return <StructuredBlock data={parsed.data} />;
+                          })()}
+                        </div>
+                        <div className="text-xs text-muted-foreground pl-2">
+                          AI • {fmtTime(m.createdAt)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))
+                  )}
+                </div>
+              ))}
+
+              {/* AI thinking bubble */}
+              {isThinking && <TypingBubble />}
+
+              {/* Invisible div for auto-scroll */}
+              <div ref={endRef} />
+            </>
           )}
         </div>
 
@@ -329,13 +421,14 @@ const ChatWithAi: FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Ask our AI…"
-            className="flex-1 border border-input rounded-full px-4 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder={isSending ? "Sending..." : "Ask our AI…"}
+            disabled={isSending}
+            className="flex-1 border border-input rounded-full px-4 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button
             onClick={send}
-            disabled={!query.trim()}
-            className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground p-2 rounded-full"
+            disabled={!query.trim() || isSending}
+            className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground p-2 rounded-full transition-colors"
           >
             <Send className="h-5 w-5" />
           </button>

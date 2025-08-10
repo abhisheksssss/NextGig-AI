@@ -1,12 +1,16 @@
 import { useUser } from '@/context/user'
 import Link from 'next/link';
-import Image from 'next/image';
-import React from 'react'
-import cat from "@/public/catImg.png";
+import React, { Suspense } from 'react'
 import Footer from './fotter';
 import Client from './subComponents/client';
-import Freelancer from './subComponents/Freelancer';
 
+import Loader from './loader';
+import dynamic from 'next/dynamic';
+
+const Freelancer = dynamic(() => import('./subComponents/Freelancer'), {
+  ssr: false,
+  loading: () =><div><Loader /></div> ,
+});
 const Main = () => {
     const { user } = useUser();
 
@@ -15,12 +19,14 @@ const Main = () => {
             {user?.onBoarding === true ? (
                 <div>
                     {user?.role === "Client" ? (
-                        <div>
+                     <Suspense fallback={<div><Loader></Loader></div>}>
                             <Client />
-                        </div> 
+                          </Suspense>
                     ) : (
                         <div className='w-full'>
+                          <Suspense fallback={<div><Loader/></div>}>
                             <Freelancer />
+                          </Suspense>
                         </div>
                     )}
                 </div>
