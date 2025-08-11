@@ -214,3 +214,12 @@ export const fetchGoogleData=async(query:string)=>{
         throw err;
       } 
 }
+
+export  const getWebSearchData=async(query:string|string[],queryType:string|string[])=>{
+    try {
+        const res= await axiosInstance.get(`/api/search?query=${query}&queryType=${queryType}`) 
+        return res.data.data
+    } catch (error) {
+        console.log(error)
+    }
+}

@@ -4,75 +4,72 @@ import Freelancer from "@/helper/model/freelancer.model";
 import PostJob from "@/helper/model/postJob";
 import { NextRequest, NextResponse } from "next/server";
 
+export async function GET(request: NextRequest) {
+  try {
+    await mongoDBConncection();
 
+    const { searchParams } = new URL(request.url);
 
-export async function POST(request:NextRequest) {
-    try {
+    let queryFromUser = searchParams.get("query");
+    let queryType = searchParams.get("queryType");
 
-        await mongoDBConncection();
-
-          const data= await request.json();
-
-        const{queryFromUser,queryType}=data;
-
-if(!queryFromUser||!queryType){
-    throw new Error("query and queryType are required");
-}
-
-const query= queryFromUser.trim();
-const firstWordOfQUery=queryFromUser.charAt(0);
-
-if(queryType==="Client"){
-    const client= await Client.find({
-        $or:[
-            {name:{$regex:`${query}$`,$options:"i"}} , //Exact match
-            {name:{$regex:`${query}`,$options:"i"}}  ,//Start With
-            {name:{$regex:query,$options:"i"}},
-              {name:{$regex:firstWordOfQUery,$options:"i"}}  
-        ]
-    }).limit(20).sort({ username: 1 })
-
-if(client.length>0){
-    return NextResponse.json({data:client},{status:200});
-}
-return NextResponse.json({data:[]},{status:200});
-}
-if(queryType==="Freelancer"){
-    const client= await Freelancer.find({
-        $or:[
-            {name:{$regex:`${query}$`,$options:"i"}} , //Exact match
-            {name:{$regex:`${query}`,$options:"i"}}  ,//Start With
-            {name:{$regex:query,$options:"i"}} ,
-              {name:{$regex:firstWordOfQUery,$options:"i"}} 
-        ]
-    }).limit(20).sort({ username: 1 })
-
-if(client.length>0){
-    return NextResponse.json({data:client},{status:200});
-}
-return NextResponse.json({data:[]},{status:200});
-}
-if(queryType==="Jobs"){
-    const client= await PostJob.find({
-        $or:[
-            {title:{$regex:`${query}$`,$options:"i"}} , //Exact match
-            {title:{$regex:`${query}`,$options:"i"}}  ,//Start With
-            {title:{$regex:query,$options:"i"}}, 
-            {title:{$regex:firstWordOfQUery,$options:"i"}} 
-        ]
-    }).limit(20).sort({ title: 1 })
-
-if(client.length>0){
-    return NextResponse.json({data:client},{status:200});
-}
-return NextResponse.json({data:[]},{status:200});
-}
-
-return NextResponse.json({data:"Wrong Job Type"},{status:400});
-    } catch (error) {
-        if(error instanceof Error){
-            console.log(error)
-            return NextResponse.json({error:error.message},{status:500})
-        }
+    if (!queryFromUser || !queryType) {
+      return NextResponse.json(
+        { error: "query and queryType are required" },
+        { status: 400 }
+      );
     }
+
+    // Decode and sanitize inputs
+    queryFromUser = decodeURIComponent(queryFromUser.trim());
+    queryType = decodeURIComponent(queryType.trim());
+
+    // Build partial queries
+    const firstWord = queryFromUser.slice(0, 5);
+    const secondPart = queryFromUser.slice(5, 10);
+    const thirdPart = queryFromUser.slice(10, 15);
+
+    // Function to generate $or search conditions
+    const buildSearchConditions = (field: string) => [
+      { [field]: { $regex: `^${queryFromUser}$`, $options: "i" } }, // Exact match
+      { [field]: { $regex: `^${queryFromUser}`, $options: "i" } },  // Starts with
+      { [field]: { $regex: queryFromUser, $options: "i" } },        // Anywhere
+      { [field]: { $regex: firstWord, $options: "i" } },
+      { [field]: { $regex: secondPart, $options: "i" } },
+      { [field]: { $regex: thirdPart, $options: "i" } },
+    ];
+
+    let results = [];
+
+    if (queryType === "Client") {
+      results = await Client.find({ $or: buildSearchConditions("name") })
+        .limit(20)
+        .sort({ name: 1 });
+    } 
+    else if (queryType === "Freelancer") {
+      results = await Freelancer.find({ $or: buildSearchConditions("name") })
+        .limit(20)
+        .sort({ name: 1 });
+    } 
+    else if (queryType === "Jobs") {
+      results = await PostJob.find({ $or: buildSearchConditions("title") })
+        .limit(20)
+        .sort({ title: 1 });
+    } 
+    else {
+      return NextResponse.json(
+        { error: "Invalid queryType" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ data: results }, { status: 200 });
+
+  } catch (error) {
+    console.error("Error in GET /webSearch:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }

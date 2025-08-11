@@ -47,6 +47,10 @@ export function Header() {
   const [mode, setMode] = React.useState("light");
 
   const { setTheme } = useTheme();
+const [query,setQuery]=React.useState<string|null>(null);
+const [queryType,setQueryType]=React.useState<string>("Client");
+
+
 
   return (
     <header className="w- full  sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-5">
@@ -116,8 +120,8 @@ export function Header() {
         
         {/* Search bar - hidden on mobile, shown on desktop */}
 
-{    user&& <div className="hidden md:flex items-center border-2 w-full max-w-[30%] border-gray-300 rounded-md bg-background pr-2 ml-2">
-<Select>
+{    user&& <div className="hidden md:flex items-center border-2 w-full max-w-[30%] border-gray-300 rounded-md bg-background pr-1 ml-2">
+<Select value={queryType} onValueChange={setQueryType}>
   <SelectTrigger className="max-w-fit">
     <SelectValue placeholder="userType" />
   </SelectTrigger>
@@ -131,9 +135,16 @@ export function Header() {
           <input
             type="text"
             placeholder="Search..."
+            onChange={(e)=>setQuery(e.target.value)}
             className="w-full px-4 py-2 rounded-md bg-background text-sm border-none focus:outline-none"
           />
+          <div className={`ml-2 pl-2 transition-all duration-300 ease-in-out hover:bg-accent hover:text-shadow-2xl text-shadow-foreground ${(!query|| !queryType) && 'hidden'} `}
+          onClick={()=>setQuery(null)}
+          >
+      <Link href={`/webSearch/${queryType}/${query}`}>
           <SearchIcon/>
+            </Link>
+          </div>
 
         </div>
         
