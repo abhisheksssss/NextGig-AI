@@ -10,7 +10,13 @@ try {
     }
 
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
-return decodedToken.id;
+    
+    if (typeof decodedToken === "object" && decodedToken !== null && "id" in decodedToken) {
+        return (decodedToken as jwt.JwtPayload).id;
+    }
+
+    return null;
+    
 } catch (error) {
     if(error instanceof Error) {
         console.error("Error decoding token:", error.message);

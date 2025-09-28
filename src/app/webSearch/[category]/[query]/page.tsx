@@ -11,9 +11,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
 const WebPage: React.FC = () => {
   const { category, query } = useParams();
+  const router=useRouter()
 
   const decodedCategory =
     typeof category === "string" ? decodeURIComponent(category) : category;
@@ -138,6 +140,83 @@ console.log(data)
           </div>
         </div>
       )}
+
+
+{decodedCategory === "Client" && (
+  <div className="container mx-auto flex flex-col gap-4">
+    <h2 className="font-bold text-2xl">
+      Result for {decodedQuery}
+    </h2>
+
+    <div className="space-y-6 pb-4">
+      {Array.isArray(data) && data.length > 0 ? (
+        data.map((val, idx: number) =>
+     
+          val?.profileVisibility !== false ? (
+             
+            <div
+              key={idx}
+              className="bg-background overflow-x-auto hide-scrollbar rounded-xl p-6 shadow-2xl border border-gray-100 dark:border-gray-700 flex items-center gap-6"
+              onClick={()=>router.push(`/profile/publicView/${val._id}-${val.role}`)}
+            >
+              {/* Profile Picture */}
+              <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0 border-2 border-gray-200 dark:border-gray-700 shadow">
+                <Image
+                  src={val.profilePicture || '/default-avatar.png'}
+                  alt={val.name || 'No Name'}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 space-y-3">
+                {/* Name & Company */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-1 text-gray-900 dark:text-white">
+                    {val.name || "Unnamed Client"}
+                  </h3>
+                  {val.company && (
+                    <div className="mt-1">
+                      <Badge variant="secondary">
+                        {val.company}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                {/* Location */}
+                {val.location && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    📍 {val.location}
+                  </p>
+                )}
+
+                {/* Contact */}
+                {val.contactdetails?.email && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    ✉ {val.contactdetails.email}
+                  </p>
+                )}
+                {/* Bio */}
+                {val.Bio && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                    {val.Bio}
+                  </p>
+                )}
+              </div>
+            </div>
+         
+          ) : null
+        )
+      ) : (
+        <div className="font-bold">No Data Found</div>
+      )}
+    </div>
+  </div>
+)}
+
+
     </>
   );
 };

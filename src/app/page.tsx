@@ -5,12 +5,9 @@
 
 
 import Main from "@/Component/Main";
-import dynamic from "next/dynamic";
+import {Header }from "@/Component/Header";
 
 
-const Header = dynamic(() => import('@/Component/Header').then(mod => ({ default: mod.Header })), {
-  ssr:  true // or false if you don't want server-side rendering
-});
 
 
 

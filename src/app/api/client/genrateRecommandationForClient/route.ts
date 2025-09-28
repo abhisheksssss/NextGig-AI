@@ -30,11 +30,12 @@ const middleNumber = Math.floor(jobsPostedByClient.length/2)
 const middleJob=jobsPostedByClient[middleNumber]
 console.log(middleJob)
 
-const job1=  [...new Set(firstJob.flatMap((val)=>(val.skills)))].join(",")
-const job2=  [...new Set(lastJob.flatMap((val)=>(val.skills)))].join(",")
+const job1 = Array.from(new Set(firstJob.flatMap((val) => val.skills))).join(",")
+const job2 = Array.from(new Set(lastJob.flatMap((val) => val.skills))).join(",")
 const job3= middleJob.skills.slice(0,5).join(",")
 
 const prompt=`give the related skills from this array ${job1},${job2},${job3}`
+console.log(prompt)
 }
 
 

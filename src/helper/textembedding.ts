@@ -26,16 +26,21 @@ return embedding
 
 export async function queryEmbedding(query:string):Promise<number[]> {
 
-    const response= await ai.models.embedContent({
-        model:"gemini-embedding-001",
-        contents: query,
-    
-    });
- if(response.embeddings) {
-    if(response.embeddings[0].values){
-      return response.embeddings[0].values
-    }
-}
+   try {
+     const response= await ai.models.embedContent({
+         model:"gemini-embedding-001",
+         contents: query,
+     
+     });
+  if(response.embeddings) {
+     if(response.embeddings[0].values){
+       return response.embeddings[0].values
+     }
+ }
+  return[]
+   } catch (error) {
+    console.log(error)
+    return[]
+   }
 
-return[]
 }

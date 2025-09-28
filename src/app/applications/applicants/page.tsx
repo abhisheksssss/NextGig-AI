@@ -1,7 +1,7 @@
 "use client";
 import Loader from "@/Component/loader";
 import GetBack from "@/Component/subComponents/getBack";
-import { IClient, useUser } from "@/context/user";
+import {  useUser } from "@/context/user";
 import { createContactApi, getApplicants, removeApplicant } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
@@ -37,6 +37,20 @@ interface Applicant {
   userId: string;
   _id: string;
   __v: number;
+}
+
+export interface JobApplicant {
+  applicants: Applicant[]; // You can replace `any[]` with a proper interface if applicant details are structured
+  budget: number;
+  clientId: string;
+  createdAt: string; // ISO date string
+  description: string;
+  skills: string[];
+  status: boolean;
+  title: string;
+  updatedAt: string; // ISO date string
+  __v: number;
+  _id: string;
 }
 
 const Applicants = () => {
@@ -117,6 +131,9 @@ const Applicants = () => {
     );
   }
 
+console.log("This are the applicants",applicants)
+
+
   return (
     <div className="w-screen h-screen relative">
       <div>
@@ -125,7 +142,7 @@ const Applicants = () => {
       <div className="border-2 rounded-xl container mx-auto max-h-[85%] h-[85%] mt-5 overflow-y-auto">
         <h3 className="font-bold text-xl pl-5 pt-2">Posted Jobs</h3>
         {user?.role === "Client" ? (
-          applicants.map((m, idx: number) => (
+          applicants.map((m:JobApplicant, idx: number) => (
             <div
               key={idx}
               onClick={() => {
@@ -175,7 +192,7 @@ const Applicants = () => {
             </div>
             <div className="overflow-y-auto max-h-[85%] hide-scrollbar">
               {applicants.map(
-                (m, idx: number) =>
+                (m:JobApplicant, idx: number) =>
                   m._id == particularJobId && (
                     <div key={idx} className="flex flex-col gap-4">
                       <h3 className="font-bold">{m.title}</h3>

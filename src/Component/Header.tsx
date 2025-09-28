@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { usePathname } from 'next/navigation'
 export function Header() {
   const { user } = useUser();
 
@@ -50,72 +51,108 @@ export function Header() {
 const [query,setQuery]=React.useState<string|null>(null);
 const [queryType,setQueryType]=React.useState<string>("Client");
 
+ const pathname = usePathname()
 
-
+ console.log(pathname)
   return (
     <header className="w- full  sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-5">
       <div className=" w-full border-2 rounded-b-xl shadow-2xl flex flex-col sm:flex-row  justify-between items-center gap-4 py-3 border-b">
         {/* Logo or Brand - Add your logo here */}
 
-        <div
-          className="flex "
-          onClick={() => {
-            router.push("/");
-          }}
+       <div
+  className="flex items-center cursor-pointer"
+  onClick={() => {
+    if(pathname!="/"){               
+      router.push("/");
+    }
+  }}
+>
+  <Image src={Logo} alt="Company Logo" width={50} height={50} className="mr-4" />
+
+  {/* Navigation Menu */}
+  <NavigationMenu className="w-full">
+    <NavigationMenuList className="flex items-center justify-center space-x-2">
+      <NavigationMenuItem>
+        <NavigationMenuLink 
+          href="/"
+          className="px-4 py-2 text-sm font-medium hover:text-blue-600 transition-colors"
         >
-          <Image src={Logo} alt="my-image" width={50} height={50} />
+          Home
+        </NavigationMenuLink>
+      </NavigationMenuItem>
 
-          {/* Navigation Menu */}
-          <NavigationMenu className="w-full ">
-            <NavigationMenuList className=" justify-center">
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Home</NavigationMenuTrigger>
-              </NavigationMenuItem>
+      <NavigationMenuItem>
+        <NavigationMenuTrigger className="px-4 py-2 text-sm font-medium">
+          Find Talent
+        </NavigationMenuTrigger>
+        <NavigationMenuContent>
+          <ul className="grid w-[200px] gap-3 p-4">
+            <li>
+              <NavigationMenuLink asChild>
+                <Link 
+                  href="/talent/browse"
+                  className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Browse Talent
+                </Link>
+              </NavigationMenuLink>
+            </li>
+            <li>
+              <NavigationMenuLink asChild>
+                <Link 
+                  href="/talent/saved"
+                  className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Saved Talent
+                </Link>
+              </NavigationMenuLink>
+            </li>
+          </ul>
+        </NavigationMenuContent>
+      </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Find Talent</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-3 p-4">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link href="/talent/browse">Browse Talent</Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link href="/talent/saved">Saved Talent</Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+      <NavigationMenuItem>
+        <NavigationMenuTrigger className="px-4 py-2 text-sm font-medium">
+          Find Work
+        </NavigationMenuTrigger>
+        <NavigationMenuContent>
+          <ul className="grid w-[200px] gap-3 p-4">
+            <li>
+              <NavigationMenuLink asChild>
+                <Link 
+                  href="/jobs/browse"
+                  className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Browse Jobs
+                </Link>
+              </NavigationMenuLink>
+            </li>
+            <li>
+              <NavigationMenuLink asChild>
+                <Link 
+                  href="/jobs/saved"
+                  className="block px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Saved Jobs
+                </Link>
+              </NavigationMenuLink>
+            </li>
+          </ul>
+        </NavigationMenuContent>
+      </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Find Work</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-3 p-4">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link href="/jobs/browse">Browse Jobs</Link>
-                      </NavigationMenuLink>
-                    </li>
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link href="/jobs/saved">Saved Jobs</Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+      <NavigationMenuItem>
+        <NavigationMenuLink 
+          href="/chatWithAi"
+          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          AI Chat
+        </NavigationMenuLink>
+      </NavigationMenuItem>
+    </NavigationMenuList>
+  </NavigationMenu>
+</div>
 
-              <NavigationMenuItem>
-                <NavigationMenuLink href="/chatWithAi">
-                  AI Chat
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
 
         
         {/* Search bar - hidden on mobile, shown on desktop */}

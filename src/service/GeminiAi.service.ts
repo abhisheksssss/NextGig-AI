@@ -12,8 +12,13 @@ import {
 } from "@langchain/langgraph";
 import { tavily } from "@tavily/core";
 import { IClient, Ifreelancer } from "@/context/user";
-import { Article, CustomSearchResult } from "@/helper/types";
+import { CustomSearchResult } from "@/helper/types";
 import { fetchGoogleData } from "@/lib/api";
+import { ChatGroq } from "@langchain/groq";
+import { DynamicTool } from "@langchain/core/tools";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { AgentExecutor, createReactAgent } from "langchain/agents";
+import { pull } from "langchain/hub";
 
 // Define a custom state that extends MessagesAnnotation
 const MyState = Annotation.Root({
@@ -27,6 +32,109 @@ const MyState = Annotation.Root({
   conversationTopic:Annotation<string>(),
   lastIntent:Annotation<string>()
 });
+
+export interface Source {
+  id: string | null;
+  name: string;
+}
+
+// Interface for a single article object
+export interface Article {
+  source: Source;
+  author: string | null;
+  title: string;
+  description: string | null;
+  url: string;
+  urlToImage: string | null;
+  publishedAt: string; // ISO 8601 date string
+  content: string | null;
+}
+
+// The main interface for the entire API response
+export interface toolNews{
+  status: 'ok' | 'error';
+  totalResults: number;
+  articles: Article[];
+  
+}
+
+
+const toolTavily = tavily({ apiKey: process.env.TAVILY_API_KEY });
+
+
+const realTimeData=new DynamicTool({
+  name:"real time data",
+  description:"provide the input and get real time data from tavily search",
+  func: async(Input:string)=>{
+    try {
+      const answer = await toolTavily.search(`${Input}`,{maxResults:3});
+      
+      console.log("This is the answer",answer)
+      
+      if (answer && answer.results) {
+        const formattedResults = answer.results.map((result, index) => 
+          `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
+      ).join("\n\n---\n\n");
+      
+      return formattedResults;
+    }
+    
+    return "No results found.";
+    
+  } catch (error) {
+    console.log(error)
+    return "Error fetching real-time data.";
+  }
+}
+
+})
+const fetchNewsData=new DynamicTool({
+  name:"Fetch real time news data ",
+  description:"provide the input and get the real time news data from ",
+  func: async(Input:string)=>{
+    try {
+
+
+   const response:Response = await fetch(
+    `https://newsapi.org/v2/everything?q=${Input}&apiKey=${process.env.NEWS_API_KEY}&pageSize=10`
+    );
+
+         
+    
+    if(response?.ok){
+      const toolNewsData: toolNews = await response.json();
+
+       if(toolNewsData.status=="ok"  && toolNewsData.articles.length>0){
+          const data= toolNewsData.articles.map(article=>({
+            author:article.author,
+             title: article.title,
+            description:article.description
+          }));
+
+          return data;
+       }else{
+        return "Error occured"
+       }
+    }
+
+  // if (answer && answer.results) {
+  //       const formattedResults = answer.results.map((result, index) => 
+  //         `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
+  //       ).join("\n\n---\n\n");
+        
+  //       return formattedResults;
+  //     }
+
+         return "No results found.";
+
+    } catch (error) {
+      console.log(error)
+      return "Error fetching real-time data.";
+    }
+  }
+})
+
+
 
 
 function getConversationContext(message: any[]) {
@@ -568,141 +676,180 @@ async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
     const conversationContext = getConversationContext(messages);
 
 
+    console.log("THis is the conversation context",conversationContext);
 
-    const gemini2 = new ChatGoogleGenerativeAI({
-      model: "gemini-2.0-flash",
-      temperature: 0,
-      apiKey: process.env.GOOGLE_API_KEY,
-    });
+     const model = new ChatGroq({
+    model: "llama-3.3-70b-versatile",
+    temperature: 0,
+  });
 
-    const systemPrompt2 = `You are a query generation assistant for the GNews API. Your task is to convert user-friendly search intents into syntactically correct, URL-encoded query strings for the \`q\` parameter. Follow these rules strictly:
+    const tools = [realTimeData,fetchNewsData];
 
-1. All queries must be URL-encoded before being returned.
-2. If the user includes special characters (e.g., !, ?, -, etc.), they must be surrounded with double quotes.
-3. Use logical operators (AND, OR, NOT) appropriately:
-   - Use AND when all terms must be present (this is the default behavior when a space is used).
-   - Use OR to include articles with either term. OR has higher precedence than AND.
-   - Use NOT to exclude specific terms. NOT must precede each word or phrase.
-4. Always use parentheses for complex expressions to clarify logical precedence.
-5. For exact matches, wrap the phrase in double quotes.
-6. Return only the final URL-encoded string—no explanation or additional text. The output must be ready to append to the \`q=\` parameter in a URL.
+  const prompt = await pull<PromptTemplate>("hwchase17/react");
 
-Examples:
-- Input: Search for Apple or Microsoft, but not iPhone  
-  Output: Apple%20OR%20Microsoft%20NOT%20iPhone
+  const  agent= await createReactAgent({
+    llm:model,
+    tools,
+    prompt
+  })
 
-- Input: Find exact phrase "Apple iPhone 13" but exclude "Apple iPhone 14"  
-  Output: %22Apple%20iPhone%2013%22%20AND%20NOT%20%22Apple%20iPhone%2014%22
+  const executor=new AgentExecutor({
+    agent,
+    tools,
+    verbose:true,
+    maxIterations:5
+  })
 
-- Input: Show results for Intel i7 or "i9-14900K" but exclude AMD and "i7-14700K"  
-  Output: (Intel%20AND%20(i7%20OR%20%22i9-14900K%22))%20AND%20NOT%20AMD%20AND%20NOT%20%22i7-14700K%22
+  try {
+    const response = await executor.invoke({
+      input:userMsg
+    })
+    console.log("Agent response:", response.output);
+    return {
+      realtimejobs: response.output,
+      analytics: "",
+      direct: "",
+    };
 
-Your task: Given a natural-language search request from the user, correct any grammar or structure if necessary, then generate the final URL-encoded GNews \`q\` query string based on the intent. Return only the query string.
-`;
-    const aires = await gemini2.invoke([
-      new SystemMessage(systemPrompt2),
-      new HumanMessage(`${userMsg}`),
-    ]);
+  } catch (error) {
+    console.log("Error during agent execution :",error);
+  return "An error occurred while processing your result"; 
+  }
 
-    const fetchData = await fetch(
-      `https://gnews.io/api/v4/search?q=${aires.content}&apikey=${process.env.GNEWS_API_KEY}`
-    );
-    const answer = await fetchData.json();
-    const fetchData1 = await fetch(
-      `https://newsapi.org/v2/everything?q=${aires.content}&apiKey=${process.env.NEWS_API_KEY}`
-    );
-    const answer1 = await fetchData1.json();
+
+//     const gemini2 = new ChatGoogleGenerativeAI({
+//       model: "gemini-2.0-flash",
+//       temperature: 0,
+//       apiKey: process.env.GOOGLE_API_KEY,
+//     });
+
+//     const systemPrompt2 = `You are a query generation assistant for the GNews API. Your task is to convert user-friendly search intents into syntactically correct, URL-encoded query strings for the \`q\` parameter. Follow these rules strictly:
+
+// 1. All queries must be URL-encoded before being returned.
+// 2. If the user includes special characters (e.g., !, ?, -, etc.), they must be surrounded with double quotes.
+// 3. Use logical operators (AND, OR, NOT) appropriately:
+//    - Use AND when all terms must be present (this is the default behavior when a space is used).
+//    - Use OR to include articles with either term. OR has higher precedence than AND.
+//    - Use NOT to exclude specific terms. NOT must precede each word or phrase.
+// 4. Always use parentheses for complex expressions to clarify logical precedence.
+// 5. For exact matches, wrap the phrase in double quotes.
+// 6. Return only the final URL-encoded string—no explanation or additional text. The output must be ready to append to the \`q=\` parameter in a URL.
+
+// Examples:
+// - Input: Search for Apple or Microsoft, but not iPhone  
+//   Output: Apple%20OR%20Microsoft%20NOT%20iPhone
+
+// - Input: Find exact phrase "Apple iPhone 13" but exclude "Apple iPhone 14"  
+//   Output: %22Apple%20iPhone%2013%22%20AND%20NOT%20%22Apple%20iPhone%2014%22
+
+// - Input: Show results for Intel i7 or "i9-14900K" but exclude AMD and "i7-14700K"  
+//   Output: (Intel%20AND%20(i7%20OR%20%22i9-14900K%22))%20AND%20NOT%20AMD%20AND%20NOT%20%22i7-14700K%22
+
+// Your task: Given a natural-language search request from the user, correct any grammar or structure if necessary, then generate the final URL-encoded GNews \`q\` query string based on the intent. Return only the query string.
+// `;
+//     const aires = await gemini2.invoke([
+//       new SystemMessage(systemPrompt2),
+//       new HumanMessage(`${userMsg}`),
+//     ]);
+
+//     const fetchData = await fetch(
+//       `https://gnews.io/api/v4/search?q=${aires.content}&apikey=${process.env.GNEWS_API_KEY}`
+//     );
+//     const answer = await fetchData.json();
+//     const fetchData1 = await fetch(
+//       `https://newsapi.org/v2/everything?q=${aires.content}&apiKey=${process.env.NEWS_API_KEY}`
+//     );
+//     const answer1 = await fetchData1.json();
     
-   const fetchData2= await fetchGoogleData(`${aires?.content}`)
+//    const fetchData2= await fetchGoogleData(`${aires?.content}`)
 
 
-       const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    const answer_Tavily = await tool.search(`${aires.content}`);
+//        const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
+//     const answer_Tavily = await tool.search(`${aires.content}`);
 
-     const data4 =answer_Tavily.results.slice(0, 4).map((m) => ({
-        content: m.content,
-      }));
+//      const data4 =answer_Tavily.results.slice(0, 4).map((m) => ({
+//         content: m.content,
+//       }));
 
-const data1 = answer.articles.slice(0, 4).map((m: Article) => ({
-  title: m.title,
-  description: m.description,
-  content: m.content,
-}));
+// const data1 = answer.articles.slice(0, 4).map((m: Article) => ({
+//   title: m.title,
+//   description: m.description,
+//   content: m.content,
+// }));
 
-const data2 = answer1.articles.slice(0, 4).map((m: Article) => ({
-  title: m.title,
-  description: m.description,
-  content: m.content,  
-}));
+// const data2 = answer1.articles.slice(0, 4).map((m: Article) => ({
+//   title: m.title,
+//   description: m.description,
+//   content: m.content,  
+// }));
 
-const data3 = fetchData2.items.slice(0, 4).map((m: CustomSearchResult) => ({
-  snippet: m.snippet,
-}));
+// const data3 = fetchData2.items.slice(0, 4).map((m: CustomSearchResult) => ({
+//   snippet: m.snippet,
+// }));
 
-const data = JSON.stringify([...data1, ...data2, ...data3, ...data4]);
-
-
-
-    const gemini = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-flash-8b",
-      temperature: 0,
-      apiKey: process.env.GOOGLE_API_KEY,
-    });
-
-const systemPrompt = `
-You are a helpful AI assistant who gives clear, natural, and job-focused answers using ONLY the provided data. Do not include any extra info, personal opinion, or assumptions.
-
-✳️ What to do:
-- Read the data array carefully and write a smooth, natural response.
-- Combine related points or patterns (e.g., job trends, hiring news) into short paragraphs or bullet points.
-- Use a friendly, confident, and informative tone.
-- Stick STRICTLY to what’s in the data — don’t invent or add anything.
-
-✳️ Style rules:
-- Write in full sentences and paraphrase the original text clearly.
-- Use 2–4 short sections (paragraphs or bullets) to highlight trends or examples.
-- Focus only on jobs, hiring, career opportunities, or market news.
-- If multiple entries say similar things, combine them into one point.
-- Do NOT quote or copy text directly from the data.
-- Do NOT include sources, extra facts, or filler.
-
-✳️ Format:
-- Use short PARAGRAPHS to explain themes.
-- Use BULLETS to list trends, jobs, or market signals.
-- Keep it relevant to the user's question.
-- End with a positive, clear tone if appropriate.
-
-🚫 Never say:
-- “I don’t have data”
-- “According to external sources”
-- “Based on my knowledge”
-- “The following data shows…”
-
-📌 If the data does not match the question, just say:
-"Data not available."
-
-After writing the response, explain it in very simple and easy-to-understand language for all users.
+// const data = JSON.stringify([...data1, ...data2, ...data3, ...data4]);
 
 
-### Provided Info:
-DATA = ${data}
 
-### Chat Context:
-${conversationContext}
+//     const gemini = new ChatGoogleGenerativeAI({
+//       model: "gemini-1.5-flash-8b",
+//       temperature: 0,
+//       apiKey: process.env.GOOGLE_API_KEY,
+//     });
 
-`;
+// const systemPrompt = `
+// You are a helpful AI assistant who gives clear, natural, and job-focused answers using ONLY the provided data. Do not include any extra info, personal opinion, or assumptions.
 
-    // 👇 AI Invocation
-    const aiRes = await gemini.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(`${conversationContext}\n\n${userMsg}`), // user's actual question
-    ]);
+// ✳️ What to do:
+// - Read the data array carefully and write a smooth, natural response.
+// - Combine related points or patterns (e.g., job trends, hiring news) into short paragraphs or bullet points.
+// - Use a friendly, confident, and informative tone.
+// - Stick STRICTLY to what’s in the data — don’t invent or add anything.
+
+// ✳️ Style rules:
+// - Write in full sentences and paraphrase the original text clearly.
+// - Use 2–4 short sections (paragraphs or bullets) to highlight trends or examples.
+// - Focus only on jobs, hiring, career opportunities, or market news.
+// - If multiple entries say similar things, combine them into one point.
+// - Do NOT quote or copy text directly from the data.
+// - Do NOT include sources, extra facts, or filler.
+
+// ✳️ Format:
+// - Use short PARAGRAPHS to explain themes.
+// - Use BULLETS to list trends, jobs, or market signals.
+// - Keep it relevant to the user's question.
+// - End with a positive, clear tone if appropriate.
+
+// 🚫 Never say:
+// - “I don’t have data”
+// - “According to external sources”
+// - “Based on my knowledge”
+// - “The following data shows…”
+
+// 📌 If the data does not match the question, just say:
+// "Data not available."
+
+// After writing the response, explain it in very simple and easy-to-understand language for all users.
+
+
+// ### Provided Info:
+// DATA = ${data}
+
+// ### Chat Context:
+// ${conversationContext}
+
+// `;
+
+//     const aiRes = await gemini.invoke([
+//       new SystemMessage(systemPrompt),
+//       new HumanMessage(`${conversationContext}\n\n${userMsg}`), // user's actual question
+//     ]);
     
-  const intent = extractContent(aires.content).toLowerCase().trim();
-    console.log("This is the ai response", intent);
+//   const intent = extractContent(aires.content).toLowerCase().trim();
+//     console.log("This is the ai response", intent);
 
     return {
-      realtimejobs: aiRes.content,
+      realtimejobs: 'No result founded',
       analytics: "",
       direct: "",
     };
@@ -775,7 +922,6 @@ const thread_id=sessionId || `user-${userId._id}-${Date.now()}`
     console.log("This is the final state",finalState)
 
    
-
     return {
       aiRes: finalState.messages[finalState.messages.length - 1].content,
     };

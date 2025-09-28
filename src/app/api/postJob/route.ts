@@ -3,6 +3,8 @@ import Client from "@/helper/model/Client.model";
 import postJob, { IPostJob } from "@/helper/model/postJob";
 import { NextRequest, NextResponse } from "next/server";
 import "@/helper/model/user.model"
+import { queryEmbedding} from "@/helper/textembedding";
+import { pinecone } from "@/service/pinecone.service";
 export async  function POST(request:NextRequest) {
     try {
         const body:IPostJob= await request.json()
@@ -27,7 +29,51 @@ const createdJob = await postJob.create({
     budget
 })
 
-     
+
+    try {
+  // Generate embedding for job description
+  const embedding = await queryEmbedding(JSON.stringify(createdJob));
+
+
+// console.log("This is embedding",embedding)
+
+  // Ensure embedding is a number[]
+  const values = Array.isArray(embedding) && embedding ;
+
+  if(!values){
+    throw new Error("No embedding gnerated")
+  }
+
+// console.log("These are the value",values)
+
+  // Use a fixed index name (created beforehand in Pinecone)
+  const index = pinecone.index("jobs");
+
+  // console.log('This is the index',index);
+
+
+
+  // Build vector
+  const vector = [
+    {
+      id: `job-${createdJob._id}`,
+      values: values,
+      metadata: {
+        text: createdJob.description, // or whole job text
+        jobId: createdJob._id.toString(),
+      },
+    },
+  ];
+
+  // Upsert vector into Pinecone
+  await index.upsert(vector);
+
+  console.log("✅ Job embedding stored in Pinecone!");
+} catch (error) {
+  console.log("❌ Error in vector embedding in posting jobs", error);
+}
+
+    
 
 
 if(createdJob){

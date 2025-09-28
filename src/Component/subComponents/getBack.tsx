@@ -11,7 +11,7 @@ const GetBack = () => {
       <div className='flex items-center gap-2 cursor-pointer w-fit p-3'
       
       onClick={()=>{
-router.push("/")
+router.back()
       }}>
 
 

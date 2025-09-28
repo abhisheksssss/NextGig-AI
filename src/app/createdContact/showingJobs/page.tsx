@@ -7,88 +7,25 @@ import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation';
 import React from 'react'
 
-// [Keep all your existing interfaces as they are]
-interface ContactDetails {
-  email: string;
-  phone: string;
-}
+// ... keep your interfaces here ...
 
-export interface ClientReference {
-  contactdetails: ContactDetails;
+interface ProjectContract {
   _id: string;
-  userId: string;
-  name: string;
-  email: string;
-  Bio?: string;
-  ContactPreference?: string;
-  Field?: string[];
-  company?: string;
-  location?: string;
-  onBoarding?: boolean;
-  profilePicture?: string;
-  role?: "Client";
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
-}
-
- export interface FreelancerReference {
-  contactdetails: ContactDetails;
-  _id: string;
-  userId: string;
-  name: string;
-  email: string;
-  Availability?: string;
-  Bio?: string;
-  ContactPreference?: string;
-  Experience?: number;
-  HourlyRate?: number;
-  Portfolio?: string[];
-  Proffession?: string;
-  Skills?: string[];
-  appliedFor?: string[];
-  languages?: string[];
-  location?: string;
-  onBoarding?: boolean;
-  profilePicture?: string;
-  profileVisibility?: string;
-  resumePdf?: string;
-  role?: "Freelancer";
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
-}
-
-export interface JobReference {
-  _id: string;
-  clientId: string;
-  title: string;
-  description: string;
-  skills: string[];
-  applicants?: string[];
-  budget?: number;
-  status?: boolean;
-  isReleased?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
-}
-
-export interface ProjectContract {
-  amount: number;
-  clientId: ClientReference;
+  jobId: {
+    title: string;
+    budget: number;
+  };
+  clientId: {
+    name: string;
+  };
+  freelancerId: {
+    name: string;
+  };
+  status: 'completed' | 'pending' | 'failed' | string;
   createdAt: string;
-  freelancerId: FreelancerReference;
-  isReleased: boolean;
-  jobId: JobReference;
-  paymentIntentId: string;
-  status: "pending" | "completed" | "failed" | "cancelled";
-  updatedAt: string;
-  __v: number;
-  _id: string;
 }
 
-export const CreatedContact = () => {
+function CreatedContact() {   // ✅ no `export` here
   const { user } = useUser();
   const router = useRouter();
 
@@ -171,4 +108,4 @@ export const CreatedContact = () => {
   )
 }
 
-export default CreatedContact
+export default CreatedContact   // ✅ only allowed export

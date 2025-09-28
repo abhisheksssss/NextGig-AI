@@ -17,3 +17,5 @@ export async function genrateContentAi(content: string,userQuestion:string) {
   
   return response.text;
 }
+
+

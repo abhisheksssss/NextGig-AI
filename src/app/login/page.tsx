@@ -16,19 +16,25 @@ const LoginPage = () => {
         e.preventDefault()
         setIsLoading(true)
         setError("")
-
-        const result = await axios.post("/api/auth/login", {
+try {
+    
+   const result = await axios.post("/api/auth/login", {
             email,
             password,
         })
 
-        if (result.status !== 200) {
-            setError("Invalid email or password. Please try again.")
-            setIsLoading(false)
-        } else {
-            router.push("/")
+     router.push("/")
             window.location.href = "/"
+
+} catch (error) {
+    if(error instanceof Error){
+         setError(`Invalid email or password. Please try again.`)
+            setIsLoading(false)
+            setEmail("")
+            setPassword("")
         }
+}
+     
     }
 
     return (
@@ -44,7 +50,7 @@ const LoginPage = () => {
                         {error && (
                             <div className="mb-6 bg-red-50 text-red-600 p-3 rounded-lg flex items-start text-sm">
                                 <FiAlertCircle className="mr-2 mt-0.5 flex-shrink-0" />
-                                {error}
+                              {error}
                             </div>
                         )}
 
