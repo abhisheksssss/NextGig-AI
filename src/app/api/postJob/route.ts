@@ -59,8 +59,10 @@ const createdJob = await postJob.create({
       id: `job-${createdJob._id}`,
       values: values,
       metadata: {
-        text: createdJob.description, // or whole job text
+        description: createdJob.description, // or whole job text
         jobId: createdJob._id.toString(),
+        skills:createdJob.skills,
+        budget:`$ ${createdJob.budget}`
       },
     },
   ];
