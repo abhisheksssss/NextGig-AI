@@ -14,83 +14,38 @@ interface userEmbeddingData {
   Skills: string[];
 }
 
+// interface Article {
+//   author: string | null;
+//   title: string;
+//   description: string;
+//   url: string;
+//   urlToImage: string;
+//   publishedAt: string;
+//   content: string;
+// }
+
 const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-// Fixed real-time data tool
+// Simplified search tool
 const realTimeData = new DynamicTool({
   name: "real_time_search",
-  description: "Search for current job market trends and skill requirements. Use only when you need recent industry data.",
+  description: "ONLY use if you encounter an unfamiliar skill or technology term. Search query should be the specific term.",
   func: async (Input: string) => {
     try {
       if (!Input || Input.trim().length === 0) {
-        return "Please provide a valid search query.";
+        return "Invalid query";
       }
 
-      const answer = await tool.search(Input.trim(), { maxResults: 2 });
+      const answer = await tool.search(Input.trim(), { maxResults: 1 });
 
-      if (answer && answer.results && answer.results.length > 0) {
-        const formattedResults = answer.results
-          .map((result, index) => 
-            `Result ${index + 1}:\nTitle: ${result.title}\nContent: ${result.content.substring(0, 300)}...`
-          )
-          .join("\n\n---\n\n");
-
-        return formattedResults;
+      if (answer?.results?.[0]) {
+        return `${answer.results[0].title}: ${answer.results[0].content.substring(0, 200)}`;
       }
 
-      return "No relevant search results found.";
+      return "No results found";
     } catch (error) {
-      console.log("Search error:", error);
-      return "Search temporarily unavailable.";
-    }
-  },
-});
-
-// FIXED News API tool - this was the main cause of the infinite loop
-const realTimeNewsData = new DynamicTool({
-  name: "job_market_news",
-  description: "Get recent news about job market trends. Use sparingly and only for current market insights.",
-  func: async (Input: string) => {
-    try {
-      if (!Input || Input.trim().length === 0) {
-        return "Please provide a news search query.";
-      }
-
-      if (!process.env.NEWS_API_KEY) {
-        return "News service not available.";
-      }
-
-      const encodedQuery = encodeURIComponent(Input.trim());
-      const response = await fetch(
-        `https://newsapi.org/v2/everything?q=${encodedQuery}&apiKey=${process.env.NEWS_API_KEY}&pageSize=3&sortBy=publishedAt`
-      );
-
-      // THIS WAS THE MISSING PART - Parse the JSON response
-      if (!response.ok) {
-        return `News API error: ${response.status}`;
-      }
-
-      const data = await response.json();
-
-      if (data.status === "error") {
-        return `News error: ${data.message}`;
-      }
-
-      if (data.articles && data.articles.length > 0) {
-        const formattedResults = data.articles
-          .slice(0, 2) // Limit to 2 articles
-          .map((article, index) => 
-            `News ${index + 1}:\nTitle: ${article.title}\nSummary: ${article.description || 'No summary'}`
-          )
-          .join("\n\n---\n\n");
-
-        return formattedResults;
-      }
-
-      return "No recent news found.";
-    } catch (error) {
-      console.log("News error:", error);
-      return "News service temporarily unavailable.";
+      console.log(error)
+      return "Search unavailable";
     }
   },
 });
@@ -108,8 +63,7 @@ function formatMatches(matches: ScoredPineconeRecord<RecordMetadata>[]) {
 
     return `Job ${idx + 1}:
 - Job ID: ${meta?.jobId}
-- Budget: ${meta?.budget}
-- Description: ${meta?.description}
+- Description: ${meta?.description.toString().slice(0, 300)}
 - Skills: ${skillsText}`;
   }).join("\n\n");
 }
@@ -118,6 +72,12 @@ function formatUserData(user: userEmbeddingData) {
   return `User Profile:
 - Profession: ${user?.Proffession}
 - Skills: ${user?.Skills.join(", ")}`;
+}
+
+// Extract job IDs from formatted text
+function extractJobIds(formattedJobs: string): string[] {
+  const matches = formattedJobs.match(/Job ID: ([a-f0-9]+)/gi);
+  return matches ? matches.map(m => m.replace("Job ID: ", "")) : [];
 }
 
 export async function JobRecomandation(query: string) {
@@ -151,8 +111,10 @@ export async function JobRecomandation(query: string) {
 
       await index.upsert(vector);
       console.log("data is inserted in pinecone");
+      return [];
     } catch (error) {
       console.log(error);
+      return [];
     }
   } else {
     const userEmbedding = result.records[`user-${userData._id}`];
@@ -162,39 +124,96 @@ export async function JobRecomandation(query: string) {
       try {
         const index2 = pinecone.index("jobs");
 
+const MIN_RELEVANCE_SCORE = 0.7;
+
         const queryResponse = await index2.query({
           vector: userEmbedding.values,
-          topK: 5,
+          topK: 10,
           includeMetadata: true,
         });
 
-        console.log("These are the matches", queryResponse.matches);
-        
-        const formattedJobs = formatMatches(queryResponse.matches);   
+        const relevantMatches = queryResponse.matches.filter(
+  (match) => match.score && match.score >= MIN_RELEVANCE_SCORE
+);
+
+
+ console.log(
+  `Found ${queryResponse.matches.length} matches, but only ${relevantMatches.length} are above the relevance threshold.`
+);
+
+        const formattedJobs = formatMatches(relevantMatches);
         const formattedUser = formatUserData(userData);
+        const allJobIds = extractJobIds(formattedJobs);
 
         console.log("This is the formatted data", formattedJobs);
 
-        // SIMPLIFIED system instruction to prevent tool overuse
-        const systemInstruction = `You are an AI Job Recommender. 
+        // OPTION 1: Simple LLM without agent (RECOMMENDED)
+        const useSimpleApproach = true;
 
-CRITICAL: Analyze the user profile and job listings provided below. Do NOT use web search tools unless you encounter unknown skills or need recent industry data.
+        if (useSimpleApproach) {
+          const model = new ChatGroq({
+            model: "llama-3.3-70b-versatile",
+            temperature: 0,
+          });
 
-Task:
-1. Compare user skills and profession with job requirements
-2. Rank jobs by relevance (best matches first)  
-3. Return ONLY a JSON array of job IDs in order
+          const prompt = `You are a job matching expert.
 
-Output format: ["job-id-1", "job-id-2", "job-id-3"]
+USER PROFILE:
+${formattedUser}
 
-IMPORTANT: Return the JSON array immediately without explanations or tool usage unless absolutely necessary.`;
+JOB LISTINGS (ranked by AI similarity):
+${formattedJobs}
+
+TASK:
+Return a JSON array of job IDs that match the user's profile.
+- Include relevant and partially relevant jobs
+- Exclude only completely irrelevant jobs
+- Keep the order (best matches first)
+
+CRITICAL: Your response must be ONLY a valid JSON array like this:
+["68d775e3ae9358206712f4cb", "6899d95b94a47420dded52b0"]
+
+No explanations, no markdown, just the JSON array.`;
+
+          const response = await model.invoke(prompt);
+          const content = response.content.toString();
+
+          // Parse JSON from response
+          const jsonMatch = content.match(/\[[\s\S]*?\]/);
+          if (jsonMatch) {
+            try {
+              const jobIds = JSON.parse(jsonMatch[0]);
+              console.log("Recommended jobs:", jobIds);
+              return jobIds;
+            } catch (e) {
+              console.log("JSON parse error, returning top matches",e);
+              return allJobIds.slice(0, 10);
+            }
+          }
+
+          return allJobIds.slice(0, 10);
+        }
+
+        // OPTION 2: Fixed Agent approach (if tools are needed)
+        const systemInstruction = `You are a job recommendation system. 
+
+STRICT RULES:
+1. Compare the user profile with job listings
+2. ONLY use tools if you encounter unfamiliar technology terms
+3. Return job IDs as a JSON array: ["id1", "id2"]
+4. NO explanations, ONLY the JSON array
+
+Think step by step:
+- Do I know all these skills? If yes, skip tools
+- Which jobs match the user's profession and skills?
+- Return the matching job IDs in JSON format`;
 
         const model = new ChatGroq({
           model: "llama-3.3-70b-versatile",
           temperature: 0,
         });
 
-        const tools = [realTimeData, realTimeNewsData];
+        const tools = [realTimeData]; // Only one tool
         const prompt = await pull<PromptTemplate>("hwchase17/react");
 
         const agent = await createReactAgent({
@@ -203,36 +222,56 @@ IMPORTANT: Return the JSON array immediately without explanations or tool usage 
           prompt,
         });
 
-        // KEY FIXES for max iterations error
         const executor = new AgentExecutor({
           agent,
           tools,
-          verbose: false, // Set to false to reduce noise
-          maxIterations: 3, // REDUCED from 5 to prevent loops
-          earlyStoppingMethod: "force", // Force stop when max reached
-          handleParsingErrors: true, // Handle parsing errors gracefully
-          // maxExecutionTime: 20000, // 20 second timeout
+          verbose: true,
+          maxIterations: 2, // Reduced to 2
+          earlyStoppingMethod: "force",
+          handleParsingErrors: true,
+          returnIntermediateSteps: false,
         });
 
         console.log("This is the query:", query);
 
         try {
           const response = await executor.invoke({
-            input: `${systemInstruction}\n\n${formattedUser}\n\nJobs:\n${formattedJobs}`,
+            input: `${systemInstruction}
+
+${formattedUser}
+
+${formattedJobs}
+
+Return ONLY the JSON array of matching job IDs.`,
           });
 
           console.log("Agent response:", response.output);
 
-          return response.output;
+          // Try to extract JSON from agent output
+          const outputStr = response.output.toString();
+          const jsonMatch = outputStr.match(/\[[\s\S]*?\]/);
+
+          if (jsonMatch) {
+            try {
+              const jobIds = JSON.parse(jsonMatch[0]);
+              return jobIds;
+            } catch (e) {
+              console.log("Failed to parse agent output",e);
+            }
+          }
+
+          // Fallback: return top matches from vector search
+          return allJobIds.slice(0, 10);
         } catch (error) {
-          console.log("Error during agent execution:", error);
-         return []; 
-          // If agent fails, return a basic recommendation based on vector similarity
-                 }
+          console.log("Agent error:", error);
+          // Fallback to vector similarity ranking
+          return allJobIds.slice(0, 10);
+        }
       } catch (error) {
         console.log("Error in querying pinecone", error);
-        return "Error processing job recommendations";
+        return [];
       }
     }
+    return [];
   }
 }

@@ -29,8 +29,8 @@ const MyState = Annotation.Root({
   direct: Annotation<string>(),
   realtimejobs: Annotation<string>(),
   userId: Annotation<Ifreelancer | IClient>(),
-  conversationTopic:Annotation<string>(),
-  lastIntent:Annotation<string>()
+  conversationTopic: Annotation<string>(),
+  lastIntent: Annotation<string>(),
 });
 
 export interface Source {
@@ -51,96 +51,86 @@ export interface Article {
 }
 
 // The main interface for the entire API response
-export interface toolNews{
-  status: 'ok' | 'error';
+export interface toolNews {
+  status: "ok" | "error";
   totalResults: number;
   articles: Article[];
-  
 }
-
 
 const toolTavily = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-
-const realTimeData=new DynamicTool({
-  name:"real time data",
-  description:"provide the input and get real time data from tavily search",
-  func: async(Input:string)=>{
+const realTimeData = new DynamicTool({
+  name: "real time data",
+  description: "provide the input and get real time data from tavily search",
+  func: async (Input: string) => {
     try {
-      const answer = await toolTavily.search(`${Input}`,{maxResults:3});
-      
-      console.log("This is the answer",answer)
-      
+      const answer = await toolTavily.search(`${Input}`, { maxResults: 3 });
+
+      console.log("This is the answer", answer);
+
       if (answer && answer.results) {
-        const formattedResults = answer.results.map((result, index) => 
-          `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
-      ).join("\n\n---\n\n");
-      
-      return formattedResults;
+        const formattedResults = answer.results
+          .map(
+            (result, index) =>
+              `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${
+                result.url
+              }\nContent: ${result.content}`
+          )
+          .join("\n\n---\n\n");
+
+        return formattedResults;
+      }
+
+      return "No results found.";
+    } catch (error) {
+      console.log(error);
+      return "Error fetching real-time data.";
     }
-    
-    return "No results found.";
-    
-  } catch (error) {
-    console.log(error)
-    return "Error fetching real-time data.";
-  }
-}
-
-})
-const fetchNewsData=new DynamicTool({
-  name:"Fetch real time news data ",
-  description:"provide the input and get the real time news data from ",
-  func: async(Input:string)=>{
+  },
+});
+const fetchNewsData = new DynamicTool({
+  name: "Fetch real time news data ",
+  description: "provide the input and get the real time news data from ",
+  func: async (Input: string) => {
     try {
+      const response: Response = await fetch(
+        `https://newsapi.org/v2/everything?q=${Input}&apiKey=${process.env.NEWS_API_KEY}&pageSize=10`
+      );
 
+      if (response?.ok) {
+        const toolNewsData: toolNews = await response.json();
 
-   const response:Response = await fetch(
-    `https://newsapi.org/v2/everything?q=${Input}&apiKey=${process.env.NEWS_API_KEY}&pageSize=10`
-    );
-
-         
-    
-    if(response?.ok){
-      const toolNewsData: toolNews = await response.json();
-
-       if(toolNewsData.status=="ok"  && toolNewsData.articles.length>0){
-          const data= toolNewsData.articles.map(article=>({
-            author:article.author,
-             title: article.title,
-            description:article.description
+        if (toolNewsData.status == "ok" && toolNewsData.articles.length > 0) {
+          const data = toolNewsData.articles.map((article) => ({
+            author: article.author,
+            title: article.title,
+            description: article.description,
           }));
 
           return data;
-       }else{
-        return "Error occured"
-       }
-    }
+        } else {
+          return "Error occured";
+        }
+      }
 
-  // if (answer && answer.results) {
-  //       const formattedResults = answer.results.map((result, index) => 
-  //         `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
-  //       ).join("\n\n---\n\n");
-        
-  //       return formattedResults;
-  //     }
+      // if (answer && answer.results) {
+      //       const formattedResults = answer.results.map((result, index) =>
+      //         `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
+      //       ).join("\n\n---\n\n");
 
-         return "No results found.";
+      //       return formattedResults;
+      //     }
 
+      return "No results found.";
     } catch (error) {
-      console.log(error)
+      console.log(error);
       return "Error fetching real-time data.";
     }
-  }
-})
-
-
-
+  },
+});
 
 function getConversationContext(message: any[]) {
-
-console.log("THis is the conversation message",message)
-
+  console.log("THis is the conversation message", message);
 
   const CONTEXT_WINDOW = 6; // Fixed from 0
   let contextMessage = message.slice(-CONTEXT_WINDOW);
@@ -148,23 +138,29 @@ console.log("THis is the conversation message",message)
   if (message.length > 10) {
     const olderMessages = message.slice(0, -CONTEXT_WINDOW);
     const summary = `Previous conversation summary: User discussed ${olderMessages.length} topics including profile analysis and job searches.`;
-    contextMessage = [
-      { role: "system", content: summary },
-      ...contextMessage
-    ];
+    contextMessage = [{ role: "system", content: summary }, ...contextMessage];
   }
 
+  console.log(
+    contextMessage
+      .map(
+        (msg) =>
+          `${
+            msg.constructor.name === "HumanMessage" ? "User" : "Assistant"
+          }: ${extractContent(msg.content)}`
+      )
+      .join("\n")
+  );
 
-  console.log(contextMessage.map(msg => 
-    `${msg.constructor.name === "HumanMessage" ? "User" : "Assistant"}: ${extractContent(msg.content)}`
-  ).join("\n"))
-
-  return( contextMessage.map(msg => 
-    `${msg.constructor.name === "HumanMessage" ? "User" : "Assistant"}: ${extractContent(msg.content)}`
-  ).join("\n"));
+  return contextMessage
+    .map(
+      (msg) =>
+        `${
+          msg.constructor.name === "HumanMessage" ? "User" : "Assistant"
+        }: ${extractContent(msg.content)}`
+    )
+    .join("\n");
 }
-
-
 
 // Helper function to extract string content from AI messages
 function extractContent(content: any): string {
@@ -204,7 +200,7 @@ async function generateAnswer(state: typeof MyState.State) {
     answer = state.realtimejobs;
   }
 
-const conversationContext = getConversationContext(state.messages || []);
+  const conversationContext = getConversationContext(state.messages || []);
   const isFollowUp = state.messages && state.messages.length > 2;
 
   if (isFollowUp && answer) {
@@ -221,18 +217,18 @@ CONVERSATION CONTEXT: ${conversationContext}
 CURRENT RESPONSE: ${answer}
 
 Add a brief, natural connecting phrase if this is a follow-up question. Keep the original response but make it flow better.`;
-    
+
     try {
       const flowResponse = await gemini.invoke([new HumanMessage(flowPrompt)]);
       answer = extractContent(flowResponse.content);
     } catch (error) {
       // Fall back to original answer if flow enhancement fails
-      console.log(error)
+      console.log(error);
     }
   }
 
   // **FIX: Clear the state values after using them to prevent accumulation**
-   return {
+  return {
     messages: [...(state.messages || []), new AIMessage(answer)],
     lastIntent: state.intent,
     conversationTopic: state.intent,
@@ -248,7 +244,7 @@ async function fetchAnalytics({ messages }: typeof MyState.State, config: any) {
   const userId = config.configurable.userId;
   console.log("This is userId", userId);
   const userMsg = messages[messages.length - 1]?.content || "";
-   const conversationContext = messages
+  const conversationContext = messages
     .slice(-3)
     .map(
       (msg) =>
@@ -257,7 +253,7 @@ async function fetchAnalytics({ messages }: typeof MyState.State, config: any) {
         }: ${extractContent(msg.content)}`
     )
     .join("\n");
-  
+
   const gemini = new ChatGoogleGenerativeAI({
     model: "gemini-1.5-flash-8b",
     temperature: 0,
@@ -460,20 +456,17 @@ async function doNotAnswer(state: typeof MyState.State) {
   };
 }
 
-
-
 // async function AnalysisOfPdf({ messages }: typeof MyState.State, config: any) {
 //   const userData=config.configurable.userId;
 
 //  const userMsg = messages[messages.length - 1]?.content || "";
-
 
 //  const pdfData={
 //   pdfUrl:userData.resumePdf,
 //   id:userData.userId,
 //   msg:userMsg.toString()
 //  }
- 
+
 //  const chunks=await processPdf(pdfData)
 
 //  return{
@@ -482,8 +475,6 @@ async function doNotAnswer(state: typeof MyState.State) {
 
 // }
 
-
-
 // **FIX: Improved intent classification with conversation context**
 async function classifyIntent({ messages }: typeof MyState.State) {
   console.log("These are the messages", messages);
@@ -491,9 +482,9 @@ async function classifyIntent({ messages }: typeof MyState.State) {
   const userMsg = messages[messages.length - 1]?.content || "";
 
   // **FIX: Include conversation context for better intent classification**
-  const conversationContext =getConversationContext(messages)
+  const conversationContext = getConversationContext(messages);
 
-console.log(conversationContext)
+  console.log(conversationContext);
 
   const gemini = new ChatGoogleGenerativeAI({
     model: "gemini-2.0-flash",
@@ -540,21 +531,18 @@ Reply with ONLY: analytics, realtime, realtimejobs, other, or blocked
 }
 
 async function fallbackNode({ messages }: typeof MyState.State) {
-
-console.log("These are the messages",messages)
+  console.log("These are the messages", messages);
 
   const userMsg = messages[messages.length - 1]?.content || "";
- const conversationContext = getConversationContext(messages)
+  const conversationContext = getConversationContext(messages);
 
-console.log("This is the conversation context:",conversationContext)
+  console.log("This is the conversation context:", conversationContext);
 
-
-const systemPrompt=`You are a helpful AI assistant. Always provide clear, concise answers based on the current conversation and the user's past inputs. Maintain the context of the discussion without repeating unnecessary details.
+  const systemPrompt = `You are a helpful AI assistant. Always provide clear, concise answers based on the current conversation and the user's past inputs. Maintain the context of the discussion without repeating unnecessary details.
  Do not make assumptions beyond what the user has shared. Keep responses natural and focused on solving the user's problems.
  CONVERSATATION CONTEXT:
  ${conversationContext}
- `
-
+ `;
 
   const gemini = new ChatGoogleGenerativeAI({
     model: "gemini-1.5-flash-8b",
@@ -564,12 +552,12 @@ const systemPrompt=`You are a helpful AI assistant. Always provide clear, concis
 
   const aiMsg = await gemini.invoke([
     new SystemMessage(systemPrompt),
-    new HumanMessage(`${userMsg}`)]);
+    new HumanMessage(`${userMsg}`),
+  ]);
   console.log("This is the ai response", aiMsg);
 
-
- const intent = extractContent(aiMsg.content).toLowerCase().trim();
-    console.log("This is the ai response", intent);
+  const intent = extractContent(aiMsg.content).toLowerCase().trim();
+  console.log("This is the ai response", intent);
 
   return {
     direct: extractContent(aiMsg.content),
@@ -583,15 +571,15 @@ async function fetchRealTime({ messages }: typeof MyState.State) {
     console.log("These are the messages by human", messages);
     const userMsg = messages[messages.length - 1]?.content || "";
 
-     const conversationContext = messages
-    .slice(-3)
-    .map(
-      (msg) =>
-        `${
-          msg.constructor.name === "HumanMessage" ? "User" : "Assistant"
-        }: ${extractContent(msg.content)}`
-    )
-    .join("\n");
+    const conversationContext = messages
+      .slice(-3)
+      .map(
+        (msg) =>
+          `${
+            msg.constructor.name === "HumanMessage" ? "User" : "Assistant"
+          }: ${extractContent(msg.content)}`
+      )
+      .join("\n");
 
     const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
     const answer = await tool.search(`${userMsg}`);
@@ -651,7 +639,7 @@ Your final output should be a smooth, well-written paragraph based only on the a
       new SystemMessage(systemPrompt),
       new HumanMessage(`${userMsg}`), // user's actual question
     ]);
- const intent = extractContent(aiRes.content).toLowerCase().trim();
+    const intent = extractContent(aiRes.content).toLowerCase().trim();
     console.log("This is the ai response", intent);
 
     return {
@@ -675,181 +663,174 @@ async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
 
     const conversationContext = getConversationContext(messages);
 
+    console.log("THis is the conversation context", conversationContext);
 
-    console.log("THis is the conversation context",conversationContext);
+    const model = new ChatGroq({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0,
+    });
 
-     const model = new ChatGroq({
-    model: "llama-3.3-70b-versatile",
-    temperature: 0,
-  });
+    const tools = [realTimeData, fetchNewsData];
 
-    const tools = [realTimeData,fetchNewsData];
+    const prompt = await pull<PromptTemplate>("hwchase17/react");
 
-  const prompt = await pull<PromptTemplate>("hwchase17/react");
+    const agent = await createReactAgent({
+      llm: model,
+      tools,
+      prompt,
+    });
 
-  const  agent= await createReactAgent({
-    llm:model,
-    tools,
-    prompt
-  })
+    const executor = new AgentExecutor({
+      agent,
+      tools,
+      verbose: true,
+      maxIterations: 5,
+    });
 
-  const executor=new AgentExecutor({
-    agent,
-    tools,
-    verbose:true,
-    maxIterations:5
-  })
+    try {
+      const response = await executor.invoke({
+        input: userMsg,
+      });
+      console.log("Agent response:", response.output);
+      return {
+        realtimejobs: response.output,
+        analytics: "",
+        direct: "",
+      };
+    } catch (error) {
+      console.log("Error during agent execution :", error);
+      return "An error occurred while processing your result";
+    }
 
-  try {
-    const response = await executor.invoke({
-      input:userMsg
-    })
-    console.log("Agent response:", response.output);
-    return {
-      realtimejobs: response.output,
-      analytics: "",
-      direct: "",
-    };
+    //     const gemini2 = new ChatGoogleGenerativeAI({
+    //       model: "gemini-2.0-flash",
+    //       temperature: 0,
+    //       apiKey: process.env.GOOGLE_API_KEY,
+    //     });
 
-  } catch (error) {
-    console.log("Error during agent execution :",error);
-  return "An error occurred while processing your result"; 
-  }
+    //     const systemPrompt2 = `You are a query generation assistant for the GNews API. Your task is to convert user-friendly search intents into syntactically correct, URL-encoded query strings for the \`q\` parameter. Follow these rules strictly:
 
+    // 1. All queries must be URL-encoded before being returned.
+    // 2. If the user includes special characters (e.g., !, ?, -, etc.), they must be surrounded with double quotes.
+    // 3. Use logical operators (AND, OR, NOT) appropriately:
+    //    - Use AND when all terms must be present (this is the default behavior when a space is used).
+    //    - Use OR to include articles with either term. OR has higher precedence than AND.
+    //    - Use NOT to exclude specific terms. NOT must precede each word or phrase.
+    // 4. Always use parentheses for complex expressions to clarify logical precedence.
+    // 5. For exact matches, wrap the phrase in double quotes.
+    // 6. Return only the final URL-encoded string—no explanation or additional text. The output must be ready to append to the \`q=\` parameter in a URL.
 
-//     const gemini2 = new ChatGoogleGenerativeAI({
-//       model: "gemini-2.0-flash",
-//       temperature: 0,
-//       apiKey: process.env.GOOGLE_API_KEY,
-//     });
+    // Examples:
+    // - Input: Search for Apple or Microsoft, but not iPhone
+    //   Output: Apple%20OR%20Microsoft%20NOT%20iPhone
 
-//     const systemPrompt2 = `You are a query generation assistant for the GNews API. Your task is to convert user-friendly search intents into syntactically correct, URL-encoded query strings for the \`q\` parameter. Follow these rules strictly:
+    // - Input: Find exact phrase "Apple iPhone 13" but exclude "Apple iPhone 14"
+    //   Output: %22Apple%20iPhone%2013%22%20AND%20NOT%20%22Apple%20iPhone%2014%22
 
-// 1. All queries must be URL-encoded before being returned.
-// 2. If the user includes special characters (e.g., !, ?, -, etc.), they must be surrounded with double quotes.
-// 3. Use logical operators (AND, OR, NOT) appropriately:
-//    - Use AND when all terms must be present (this is the default behavior when a space is used).
-//    - Use OR to include articles with either term. OR has higher precedence than AND.
-//    - Use NOT to exclude specific terms. NOT must precede each word or phrase.
-// 4. Always use parentheses for complex expressions to clarify logical precedence.
-// 5. For exact matches, wrap the phrase in double quotes.
-// 6. Return only the final URL-encoded string—no explanation or additional text. The output must be ready to append to the \`q=\` parameter in a URL.
+    // - Input: Show results for Intel i7 or "i9-14900K" but exclude AMD and "i7-14700K"
+    //   Output: (Intel%20AND%20(i7%20OR%20%22i9-14900K%22))%20AND%20NOT%20AMD%20AND%20NOT%20%22i7-14700K%22
 
-// Examples:
-// - Input: Search for Apple or Microsoft, but not iPhone  
-//   Output: Apple%20OR%20Microsoft%20NOT%20iPhone
+    // Your task: Given a natural-language search request from the user, correct any grammar or structure if necessary, then generate the final URL-encoded GNews \`q\` query string based on the intent. Return only the query string.
+    // `;
+    //     const aires = await gemini2.invoke([
+    //       new SystemMessage(systemPrompt2),
+    //       new HumanMessage(`${userMsg}`),
+    //     ]);
 
-// - Input: Find exact phrase "Apple iPhone 13" but exclude "Apple iPhone 14"  
-//   Output: %22Apple%20iPhone%2013%22%20AND%20NOT%20%22Apple%20iPhone%2014%22
+    //     const fetchData = await fetch(
+    //       `https://gnews.io/api/v4/search?q=${aires.content}&apikey=${process.env.GNEWS_API_KEY}`
+    //     );
+    //     const answer = await fetchData.json();
+    //     const fetchData1 = await fetch(
+    //       `https://newsapi.org/v2/everything?q=${aires.content}&apiKey=${process.env.NEWS_API_KEY}`
+    //     );
+    //     const answer1 = await fetchData1.json();
 
-// - Input: Show results for Intel i7 or "i9-14900K" but exclude AMD and "i7-14700K"  
-//   Output: (Intel%20AND%20(i7%20OR%20%22i9-14900K%22))%20AND%20NOT%20AMD%20AND%20NOT%20%22i7-14700K%22
+    //    const fetchData2= await fetchGoogleData(`${aires?.content}`)
 
-// Your task: Given a natural-language search request from the user, correct any grammar or structure if necessary, then generate the final URL-encoded GNews \`q\` query string based on the intent. Return only the query string.
-// `;
-//     const aires = await gemini2.invoke([
-//       new SystemMessage(systemPrompt2),
-//       new HumanMessage(`${userMsg}`),
-//     ]);
+    //        const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
+    //     const answer_Tavily = await tool.search(`${aires.content}`);
 
-//     const fetchData = await fetch(
-//       `https://gnews.io/api/v4/search?q=${aires.content}&apikey=${process.env.GNEWS_API_KEY}`
-//     );
-//     const answer = await fetchData.json();
-//     const fetchData1 = await fetch(
-//       `https://newsapi.org/v2/everything?q=${aires.content}&apiKey=${process.env.NEWS_API_KEY}`
-//     );
-//     const answer1 = await fetchData1.json();
-    
-//    const fetchData2= await fetchGoogleData(`${aires?.content}`)
+    //      const data4 =answer_Tavily.results.slice(0, 4).map((m) => ({
+    //         content: m.content,
+    //       }));
 
+    // const data1 = answer.articles.slice(0, 4).map((m: Article) => ({
+    //   title: m.title,
+    //   description: m.description,
+    //   content: m.content,
+    // }));
 
-//        const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
-//     const answer_Tavily = await tool.search(`${aires.content}`);
+    // const data2 = answer1.articles.slice(0, 4).map((m: Article) => ({
+    //   title: m.title,
+    //   description: m.description,
+    //   content: m.content,
+    // }));
 
-//      const data4 =answer_Tavily.results.slice(0, 4).map((m) => ({
-//         content: m.content,
-//       }));
+    // const data3 = fetchData2.items.slice(0, 4).map((m: CustomSearchResult) => ({
+    //   snippet: m.snippet,
+    // }));
 
-// const data1 = answer.articles.slice(0, 4).map((m: Article) => ({
-//   title: m.title,
-//   description: m.description,
-//   content: m.content,
-// }));
+    // const data = JSON.stringify([...data1, ...data2, ...data3, ...data4]);
 
-// const data2 = answer1.articles.slice(0, 4).map((m: Article) => ({
-//   title: m.title,
-//   description: m.description,
-//   content: m.content,  
-// }));
+    //     const gemini = new ChatGoogleGenerativeAI({
+    //       model: "gemini-1.5-flash-8b",
+    //       temperature: 0,
+    //       apiKey: process.env.GOOGLE_API_KEY,
+    //     });
 
-// const data3 = fetchData2.items.slice(0, 4).map((m: CustomSearchResult) => ({
-//   snippet: m.snippet,
-// }));
+    // const systemPrompt = `
+    // You are a helpful AI assistant who gives clear, natural, and job-focused answers using ONLY the provided data. Do not include any extra info, personal opinion, or assumptions.
 
-// const data = JSON.stringify([...data1, ...data2, ...data3, ...data4]);
+    // ✳️ What to do:
+    // - Read the data array carefully and write a smooth, natural response.
+    // - Combine related points or patterns (e.g., job trends, hiring news) into short paragraphs or bullet points.
+    // - Use a friendly, confident, and informative tone.
+    // - Stick STRICTLY to what’s in the data — don’t invent or add anything.
 
+    // ✳️ Style rules:
+    // - Write in full sentences and paraphrase the original text clearly.
+    // - Use 2–4 short sections (paragraphs or bullets) to highlight trends or examples.
+    // - Focus only on jobs, hiring, career opportunities, or market news.
+    // - If multiple entries say similar things, combine them into one point.
+    // - Do NOT quote or copy text directly from the data.
+    // - Do NOT include sources, extra facts, or filler.
 
+    // ✳️ Format:
+    // - Use short PARAGRAPHS to explain themes.
+    // - Use BULLETS to list trends, jobs, or market signals.
+    // - Keep it relevant to the user's question.
+    // - End with a positive, clear tone if appropriate.
 
-//     const gemini = new ChatGoogleGenerativeAI({
-//       model: "gemini-1.5-flash-8b",
-//       temperature: 0,
-//       apiKey: process.env.GOOGLE_API_KEY,
-//     });
+    // 🚫 Never say:
+    // - “I don’t have data”
+    // - “According to external sources”
+    // - “Based on my knowledge”
+    // - “The following data shows…”
 
-// const systemPrompt = `
-// You are a helpful AI assistant who gives clear, natural, and job-focused answers using ONLY the provided data. Do not include any extra info, personal opinion, or assumptions.
+    // 📌 If the data does not match the question, just say:
+    // "Data not available."
 
-// ✳️ What to do:
-// - Read the data array carefully and write a smooth, natural response.
-// - Combine related points or patterns (e.g., job trends, hiring news) into short paragraphs or bullet points.
-// - Use a friendly, confident, and informative tone.
-// - Stick STRICTLY to what’s in the data — don’t invent or add anything.
+    // After writing the response, explain it in very simple and easy-to-understand language for all users.
 
-// ✳️ Style rules:
-// - Write in full sentences and paraphrase the original text clearly.
-// - Use 2–4 short sections (paragraphs or bullets) to highlight trends or examples.
-// - Focus only on jobs, hiring, career opportunities, or market news.
-// - If multiple entries say similar things, combine them into one point.
-// - Do NOT quote or copy text directly from the data.
-// - Do NOT include sources, extra facts, or filler.
+    // ### Provided Info:
+    // DATA = ${data}
 
-// ✳️ Format:
-// - Use short PARAGRAPHS to explain themes.
-// - Use BULLETS to list trends, jobs, or market signals.
-// - Keep it relevant to the user's question.
-// - End with a positive, clear tone if appropriate.
+    // ### Chat Context:
+    // ${conversationContext}
 
-// 🚫 Never say:
-// - “I don’t have data”
-// - “According to external sources”
-// - “Based on my knowledge”
-// - “The following data shows…”
+    // `;
 
-// 📌 If the data does not match the question, just say:
-// "Data not available."
+    //     const aiRes = await gemini.invoke([
+    //       new SystemMessage(systemPrompt),
+    //       new HumanMessage(`${conversationContext}\n\n${userMsg}`), // user's actual question
+    //     ]);
 
-// After writing the response, explain it in very simple and easy-to-understand language for all users.
-
-
-// ### Provided Info:
-// DATA = ${data}
-
-// ### Chat Context:
-// ${conversationContext}
-
-// `;
-
-//     const aiRes = await gemini.invoke([
-//       new SystemMessage(systemPrompt),
-//       new HumanMessage(`${conversationContext}\n\n${userMsg}`), // user's actual question
-//     ]);
-    
-//   const intent = extractContent(aires.content).toLowerCase().trim();
-//     console.log("This is the ai response", intent);
+    //   const intent = extractContent(aires.content).toLowerCase().trim();
+    //     console.log("This is the ai response", intent);
 
     return {
-      realtimejobs: 'No result founded',
+      realtimejobs: "No result founded",
       analytics: "",
       direct: "",
     };
@@ -866,7 +847,7 @@ async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
 export async function initializeAgent(
   userMessage: string,
   userId: Ifreelancer | IClient,
-  sessionId?:string,   //optional session id
+  sessionId?: string //optional session id
 ) {
   try {
     // Create memory saver for persistence
@@ -901,14 +882,14 @@ export async function initializeAgent(
 
     // Create config with consistent thread_id for conversation persistence
 
-const thread_id=sessionId || `user-${userId._id}-${Date.now()}`
+    const thread_id = sessionId || `user-${userId._id}-${Date.now()}`;
 
-   const config={
-     configurable:{
-      thread_id:thread_id,
-      userId
-     }
-   }
+    const config = {
+      configurable: {
+        thread_id: thread_id,
+        userId,
+      },
+    };
 
     console.log("=== First Question ===");
     const finalState = await app.invoke(
@@ -918,10 +899,8 @@ const thread_id=sessionId || `user-${userId._id}-${Date.now()}`
       config
     );
 
+    console.log("This is the final state", finalState);
 
-    console.log("This is the final state",finalState)
-
-   
     return {
       aiRes: finalState.messages[finalState.messages.length - 1].content,
     };

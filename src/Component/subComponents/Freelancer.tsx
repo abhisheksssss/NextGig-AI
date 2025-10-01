@@ -4,6 +4,7 @@ import JobCards from './JobCards'
 import { useQuery } from '@tanstack/react-query'
 import { fetchJobs } from '@/lib/api'
 import News from './news';
+import Loader from '../loader'
 // import useSocket from '@/hooks/useSocket';
 
 
@@ -42,7 +43,7 @@ const {data,isLoading,isError,error}=useQuery({
 
 
 
-if(isLoading)return <p>Loading Jobs....</p>
+if(isLoading)return <div className='fixed inset-0 flex items-center justify-center bg-black/2 z-50'><Loader></Loader></div>
 
 if(isError)return <p>Error :{(error as Error).message}</p>
 
