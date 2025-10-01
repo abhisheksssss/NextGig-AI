@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
 
 const redis = new Redis({
-    host: "redis-19824.c264.ap-south-1-1.ec2.redns.redis-cloud.com",
+    host: `${process.env.REDIS_C}`,
     port: 19824,
     username: "default", 
     password: "3iV7W8pB49zwzIhebJA7eA7Uc8n4fbav"
