@@ -8,15 +8,12 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "../dist/server",
+    "outDir": "../dist",
     "rootDir": "..",
     "baseUrl": "..",
+    "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/helper/*": ["./src/helper/*"],
-      "@/lib/*": ["./src/lib/*"],
-      "@/Component/*": ["./src/Component/*"],
-      "@/context/*": ["./src/context/*"]
+      "@/*": ["./src/*"]
     },
     "noEmit": false,
     "types": ["node", "express"],
@@ -24,18 +21,12 @@
     "declaration": false
   },
   "include": [
-    "../src/**/*",
-    "./**/*"
+    "../server/**/*",
+    "../src/**/*"
   ],
   "exclude": [
     "../node_modules",
     "../.next",
     "../dist"
-  ],
-  "ts-node": {
-    "esm": false,
-    "compilerOptions": {
-      "module": "commonjs"
-    }
-  }
+  ]
 }

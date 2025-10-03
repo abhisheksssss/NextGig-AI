@@ -1,12 +1,12 @@
 import { ChatGroq } from "@langchain/groq";
-import { AgentExecutor, createReactAgent } from "langchain/agents";
-import { pull } from "langchain/hub";
-import { DynamicTool } from "@langchain/core/tools";
-import { type PromptTemplate } from "@langchain/core/prompts";
 import { tavily } from "@tavily/core";
+import { DynamicTool } from "@langchain/core/tools";
 import { queryEmbedding } from "@/helper/textembedding";
 import { pinecone } from "./pinecone.service";
-import { RecordMetadata, ScoredPineconeRecord } from "@pinecone-database/pinecone";
+import {
+  RecordMetadata,
+  ScoredPineconeRecord,
+} from "@pinecone-database/pinecone";
 
 interface userEmbeddingData {
   _id: string;
@@ -14,22 +14,13 @@ interface userEmbeddingData {
   Skills: string[];
 }
 
-// interface Article {
-//   author: string | null;
-//   title: string;
-//   description: string;
-//   url: string;
-//   urlToImage: string;
-//   publishedAt: string;
-//   content: string;
-// }
-
 const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-// Simplified search tool
+// Keep your Tavily search tool
 const realTimeData = new DynamicTool({
   name: "real_time_search",
-  description: "ONLY use if you encounter an unfamiliar skill or technology term. Search query should be the specific term.",
+  description:
+    "ONLY use if you encounter an unfamiliar skill or technology term. Search query should be the specific term.",
   func: async (Input: string) => {
     try {
       if (!Input || Input.trim().length === 0) {
@@ -39,33 +30,39 @@ const realTimeData = new DynamicTool({
       const answer = await tool.search(Input.trim(), { maxResults: 1 });
 
       if (answer?.results?.[0]) {
-        return `${answer.results[0].title}: ${answer.results[0].content.substring(0, 200)}`;
+        return `${answer.results[0].title}: ${answer.results[0].content.substring(
+          0,
+          200
+        )}`;
       }
 
       return "No results found";
     } catch (error) {
-      console.log(error)
+      console.log(error);
       return "Search unavailable";
     }
   },
 });
 
 function formatMatches(matches: ScoredPineconeRecord<RecordMetadata>[]) {
-  return matches.map((m, idx) => {
-    const meta = m.metadata;
+  return matches
+    .map((m, idx) => {
+      const meta = m.metadata;
 
-    let skillsText = "Not specified";
-    if (Array.isArray(meta?.skills)) {
-      skillsText = (meta.skills as string[]).join(", ");
-    } else if (typeof meta?.skills === "string") {
-      skillsText = meta.skills;
-    }
+      let skillsText = "Not specified";
+      if (Array.isArray(meta?.skills)) {
+        skillsText = (meta.skills as string[]).join(", ");
+      } else if (typeof meta?.skills === "string") {
+        skillsText = meta.skills;
+      }
 
-    return `Job ${idx + 1}:
+      return `Job ${idx + 1}:
 - Job ID: ${meta?.jobId}
 - Description: ${meta?.description.toString().slice(0, 300)}
-- Skills: ${skillsText}`;
-  }).join("\n\n");
+- Skills: ${skillsText}
+- Similarity Score: ${m.score?.toFixed(3)}`;
+    })
+    .join("\n\n");
 }
 
 function formatUserData(user: userEmbeddingData) {
@@ -77,22 +74,22 @@ function formatUserData(user: userEmbeddingData) {
 // Extract job IDs from formatted text
 function extractJobIds(formattedJobs: string): string[] {
   const matches = formattedJobs.match(/Job ID: ([a-f0-9]+)/gi);
-  return matches ? matches.map(m => m.replace("Job ID: ", "")) : [];
+  return matches ? matches.map((m) => m.replace("Job ID: ", "")) : [];
 }
 
 export async function JobRecomandation(query: string) {
-  console.log(JSON.parse(query));
+  console.log("Input query:", JSON.parse(query));
 
   const userData: userEmbeddingData = JSON.parse(query)[0];
   const index = pinecone.index("userembedding");
   const result = await index.fetch([`user-${userData._id}`]);
 
   if (Object.keys(result.records).length === 0) {
-    console.log("data not found in pinecone");
+    console.log("User embedding not found in Pinecone, creating new embedding...");
 
     try {
-      const embedding = await queryEmbedding(JSON.stringify(query));
-      const values = Array.isArray(embedding) && embedding;
+      const embedding = await queryEmbedding(JSON.stringify(userData));
+      const values = Array.isArray(embedding) ? embedding : null;
 
       if (!values) {
         throw new Error("No embedding generated");
@@ -103,175 +100,153 @@ export async function JobRecomandation(query: string) {
           id: `user-${userData._id}`,
           values: values,
           metadata: {
-            text: userData.Proffession.toString(),
+            profession: userData.Proffession.toString(),
+            skills: userData.Skills.join(", "),
             userId: userData._id.toString(),
           },
         },
       ];
 
       await index.upsert(vector);
-      console.log("data is inserted in pinecone");
+      console.log("User embedding created successfully");
       return [];
     } catch (error) {
-      console.log(error);
+      console.error("Error creating user embedding:", error);
       return [];
     }
-  } else {
-    const userEmbedding = result.records[`user-${userData._id}`];
-    console.log("This is the user embedding", userEmbedding);
+  }
 
-    if (userEmbedding.values) {
-      try {
-        const index2 = pinecone.index("jobs");
+  const userEmbedding = result.records[`user-${userData._id}`];
+  console.log("User embedding found:", userEmbedding.id);
 
-const MIN_RELEVANCE_SCORE = 0.7;
+  if (!userEmbedding.values) {
+    console.error("User embedding has no values");
+    return [];
+  }
 
-        const queryResponse = await index2.query({
-          vector: userEmbedding.values,
-          topK: 10,
-          includeMetadata: true,
-        });
+  try {
+    const index2 = pinecone.index("jobs");
 
-        const relevantMatches = queryResponse.matches.filter(
-  (match) => match.score && match.score >= MIN_RELEVANCE_SCORE
-);
+    // FIXED: Lowered threshold from 0.7 to 0.5
+    const MIN_RELEVANCE_SCORE = 0.5;
 
+    // FIXED: Increased topK to 20
+    const queryResponse = await index2.query({
+      vector: userEmbedding.values,
+      topK: 20,
+      includeMetadata: true,
+    });
 
- console.log(
-  `Found ${queryResponse.matches.length} matches, but only ${relevantMatches.length} are above the relevance threshold.`
-);
+    console.log(`Total matches from Pinecone: ${queryResponse.matches.length}`);
+    console.log(
+      "Match scores:",
+      queryResponse.matches.map((m) => m.score?.toFixed(3))
+    );
 
-        const formattedJobs = formatMatches(relevantMatches);
-        const formattedUser = formatUserData(userData);
-        const allJobIds = extractJobIds(formattedJobs);
+    // Adaptive threshold
+    const scores = queryResponse.matches.map((m) => m.score || 0);
+    const adaptiveThreshold = Math.max(
+      MIN_RELEVANCE_SCORE,
+      scores.length > 0 ? scores[0] * 0.6 : MIN_RELEVANCE_SCORE
+    );
 
-        console.log("This is the formatted data", formattedJobs);
+    const relevantMatches = queryResponse.matches.filter(
+      (match) => match.score && match.score >= adaptiveThreshold
+    );
 
-        // OPTION 1: Simple LLM without agent (RECOMMENDED)
-        const useSimpleApproach = true;
+    console.log(
+      `Found ${queryResponse.matches.length} matches, ${relevantMatches.length} above threshold ${adaptiveThreshold.toFixed(3)}`
+    );
 
-        if (useSimpleApproach) {
-          const model = new ChatGroq({
-            model: "llama-3.3-70b-versatile",
-            temperature: 0,
-          });
+    if (relevantMatches.length === 0) {
+      console.warn("No relevant matches found");
+      return [];
+    }
 
-          const prompt = `You are a job matching expert.
+    const formattedJobs = formatMatches(relevantMatches);
+    const formattedUser = formatUserData(userData);
+    const allJobIds = extractJobIds(formattedJobs);
+
+    console.log(`Extracted ${allJobIds.length} job IDs from matches`);
+
+    const model = new ChatGroq({
+      model: "llama-3.3-70b-versatile",
+      temperature: 0,
+    });
+
+    // FIXED: Improved prompt with tool usage instructions
+    const prompt = `You are a job matching AI analyzing a list of pre-filtered job recommendations tailored for a specific user profile.
 
 USER PROFILE:
 ${formattedUser}
 
-JOB LISTINGS (ranked by AI similarity):
+CANDIDATE JOBS (already filtered by vector similarity):
 ${formattedJobs}
 
-TASK:
-Return a JSON array of job IDs that match the user's profile.
-- Include relevant and partially relevant jobs
-- Exclude only completely irrelevant jobs
-- Keep the order (best matches first)
+TOOL AVAILABILITY:
+- You have access to the real_time_search tool to look up unknown or new technology terms.
+- Use the tool ONLY if you encounter a skill/technology in the jobs or user profile that is completely unfamiliar.
+- For common technologies like React, Python, AWS, etc., do NOT use the tool.
 
-CRITICAL: Your response must be ONLY a valid JSON array like this:
-["68d775e3ae9358206712f4cb", "6899d95b94a47420dded52b0"]
+ANALYSIS INSTRUCTIONS:
+1. Calculate a match percentage for each job based on skill overlap with the user's skills.
+2. Take into account transferable skills, for example: React experience partially counts towards Vue.js.
+3. Match percentage = (weighted count of matched skills including transferable skills) / (total required skills of the job).
+4. Consider years of experience and expertise levels if available to adjust score slightly.
+5. Only include jobs where the match percentage is 40% or higher.
+6. Exclude jobs that require skills from completely unrelated fields or expertise.
+7. Sort the jobs by descending match percentage to rank the most relevant jobs at the top.
+8. Return only a JSON array of job IDs sorted according to this order.
 
-No explanations, no markdown, just the JSON array.`;
+OUTPUT FORMAT:
+Return ONLY a valid JSON array of job IDs sorted by match percentage, no markdown, no explanations, no code blocks.
 
-          const response = await model.invoke(prompt);
-          const content = response.content.toString();
+Example (highest matching jobs first):
+["jobId1", "jobId2", "jobId3"]
 
-          // Parse JSON from response
-          const jsonMatch = content.match(/\[[\s\S]*?\]/);
-          if (jsonMatch) {
-            try {
-              const jobIds = JSON.parse(jsonMatch[0]);
-              console.log("Recommended jobs:", jobIds);
-              return jobIds;
-            } catch (e) {
-              console.log("JSON parse error, returning top matches",e);
-              return allJobIds.slice(0, 10);
-            }
-          }
+If no jobs meet the minimum match threshold, return an empty JSON array:
+[]
+`;
 
-          return allJobIds.slice(0, 10);
-        }
+    const response = await model.invoke(prompt);
+    const content = response.content.toString().trim();
 
-        // OPTION 2: Fixed Agent approach (if tools are needed)
-        const systemInstruction = `You are a job recommendation system. 
+    console.log("LLM raw response:", content);
 
-STRICT RULES:
-1. Compare the user profile with job listings
-2. ONLY use tools if you encounter unfamiliar technology terms
-3. Return job IDs as a JSON array: ["id1", "id2"]
-4. NO explanations, ONLY the JSON array
+    // Parse JSON from response
+    let jobIds: string[] = [];
 
-Think step by step:
-- Do I know all these skills? If yes, skip tools
-- Which jobs match the user's profession and skills?
-- Return the matching job IDs in JSON format`;
-
-        const model = new ChatGroq({
-          model: "llama-3.3-70b-versatile",
-          temperature: 0,
-        });
-
-        const tools = [realTimeData]; // Only one tool
-        const prompt = await pull<PromptTemplate>("hwchase17/react");
-
-        const agent = await createReactAgent({
-          llm: model,
-          tools,
-          prompt,
-        });
-
-        const executor = new AgentExecutor({
-          agent,
-          tools,
-          verbose: true,
-          maxIterations: 2, // Reduced to 2
-          earlyStoppingMethod: "force",
-          handleParsingErrors: true,
-          returnIntermediateSteps: false,
-        });
-
-        console.log("This is the query:", query);
-
+    try {
+      jobIds = JSON.parse(content);
+      if (Array.isArray(jobIds)) {
+        console.log("Successfully parsed direct JSON");
+      } else {
+        throw new Error("Not an array");
+      }
+    } catch (e) {
+      const jsonMatch = content.match(/\[[\s\S]*?\]/);
+      if (jsonMatch) {
         try {
-          const response = await executor.invoke({
-            input: `${systemInstruction}
-
-${formattedUser}
-
-${formattedJobs}
-
-Return ONLY the JSON array of matching job IDs.`,
-          });
-
-          console.log("Agent response:", response.output);
-
-          // Try to extract JSON from agent output
-          const outputStr = response.output.toString();
-          const jsonMatch = outputStr.match(/\[[\s\S]*?\]/);
-
-          if (jsonMatch) {
-            try {
-              const jobIds = JSON.parse(jsonMatch[0]);
-              return jobIds;
-            } catch (e) {
-              console.log("Failed to parse agent output",e);
-            }
-          }
-
-          // Fallback: return top matches from vector search
-          return allJobIds.slice(0, 10);
-        } catch (error) {
-          console.log("Agent error:", error);
-          // Fallback to vector similarity ranking
-          return allJobIds.slice(0, 10);
+          jobIds = JSON.parse(jsonMatch[0]);
+          console.log("Extracted JSON from text",e);
+        } catch (e2) {
+          console.error("Failed to parse extracted JSON:", e2);
         }
-      } catch (error) {
-        console.log("Error in querying pinecone", error);
-        return [];
       }
     }
+
+    // Validate and return
+    if (Array.isArray(jobIds) && jobIds.length > 0) {
+      jobIds = jobIds.filter((id) => typeof id === "string" && id.length > 0);
+      console.log(`Returning ${jobIds.length} recommended jobs:`, jobIds);
+      return jobIds.slice(0, 15);
+    }
+
+    console.warn("LLM returned invalid output, using vector similarity ranking");
+    return allJobIds.slice(0, Math.min(10, allJobIds.length));
+
+  } catch (error) {
+    console.error("Error in job recommendation:", error);
     return [];
   }
 }

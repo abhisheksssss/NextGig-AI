@@ -6,54 +6,58 @@ import express from "express";
 import next from "next";
 import { Server } from "socket.io";
 import { mongoDBConncection } from "../src/app/dbConfig/db";
-import messageModel from "../src/helper/model/message.model.ts";
-import { initializeAgent } from "../src/service/GeminiAi.service.ts";
+import messageModel from "../src/helper/model/message.model";
+import { initializeAgent } from "../src/service/GeminiAi.service";
+
 const redisServer = new RedisMemoryServer();
 
 async function main() {
   const dev = process.env.NODE_ENV !== "production";
-  // Specify the directory where Next.js app is located
-  const app = next({ dev, dir: "./src" }); // Go up one level to the project root
-  const handle = app.getRequestHandler();
+  const port = parseInt(process.env.PORT || "3001", 10);
+  
+  const nextApp = next({ dev });
+  const handle = nextApp.getRequestHandler();
 
   await mongoDBConncection();
+  await nextApp.prepare();
+  console.log("✅ Next.js prepared");
 
-  await app.prepare();
+  const app = express();
+  const server = createServer(app);
 
-  const expressApp = express();
-  const httpServer = createServer(expressApp);
-
-  // Start in-memory Redis
   const host = await redisServer.getHost();
-  const port = await redisServer.getPort();
+  const redisPort = await redisServer.getPort();
 
-  // Connect Redis clients (pub + sub)
-  const pubClient = createClient({ url: `redis://${host}:${port}` });
-  pubClient.on("error", (err) =>
-    console.error("❌ Redis pubClient error:", err)
-  );
+  const pubClient = createClient({ url: `redis://${host}:${redisPort}` });
   await pubClient.connect();
+  pubClient.on("error", (err) => console.error("Redis pub error:", err));
 
   const subClient = pubClient.duplicate();
-  subClient.on("error", (err) =>
-    console.error("❌ Redis subClient error:", err)
-  ); // ✅
   await subClient.connect();
-  console.log(`🧠 RedisMemoryServer running at redis://${host}:${port}`);
-  // Attach Socket.IO with Redis adapter
-  const io = new Server(httpServer, {
-    cors: { origin: dev ? "http://localhost:3000" : undefined },
+  subClient.on("error", (err) => console.error("Redis sub error:", err));
+  
+  console.log(`🧠 Redis running at redis://${host}:${redisPort}`);
+
+  const io = new Server(server, {
+    cors: {
+      origin: ["http://localhost:3000", "http://localhost:3001"],
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    transports: ["websocket", "polling"]
   });
+  
   io.adapter(createAdapter(pubClient, subClient));
 
   io.on("connection", (socket) => {
+    console.log("✅ Client connected:", socket.id);
+    
     socket.on("join-room", (roomId) => {
-      console.log("This is room", roomId);
       socket.join(roomId);
+      console.log(`Socket ${socket.id} joined room ${roomId}`);
     });
+    
     socket.on("message", async ({ roomId, text, from, to }) => {
-      const msg = { roomId, text, from: from, to, ts: Date.now() };
-
       try {
         const savedMessage = await messageModel.create({
           sender: from,
@@ -61,76 +65,81 @@ async function main() {
           text,
           roomId,
         });
+        
         if (savedMessage) {
-          const mesg = {
-            _id: savedMessage._id, // ✅ Include MongoDB _id
+          io.to(roomId).emit("message", {
+            _id: savedMessage._id,
             roomId,
             text: savedMessage.text,
-            from: savedMessage.sender, // you can keep this as 'from' if you want
+            from: savedMessage.sender,
             to: savedMessage.receiver,
-            ts: savedMessage.createdAt || Date.now(), // or savedMessage.timestamp if you store one
-          };
-
-          io.to(roomId).emit("message", mesg);
+            ts: savedMessage.createdAt || Date.now(),
+          });
         }
       } catch (error) {
-        console.log(error);
+        console.error("Message error:", error);
       }
+    });
 
-      // save to databse
+    socket.on("disconnect", () => {
+      console.log("❌ Client disconnected:", socket.id);
     });
   });
 
-//bot chat namespace
-
-const botNamespace = io.of("/bot");
-
-botNamespace.on("connection", (socket) => {
+  const botNamespace = io.of("/bot");
+  
+  botNamespace.on("connection", (socket) => {
+    console.log("✅ Bot client connected:", socket.id);
+    
     socket.on("join-room", (roomId) => {
-        if (roomId) {
-            socket.join(roomId);
-        }
+      if (roomId) {
+        socket.join(roomId);
+        console.log(`Bot socket ${socket.id} joined room ${roomId}`);
+      }
     });
     
     socket.on("message", async ({ roomId, query, userId }) => {
-        try {
-            if (!roomId || !query || !userId) {
-                return;
-            }
-            // Get AI response
-            const aiResponse = await initializeAgent(query,userId,`session-${roomId}-${new Date().toDateString()}`);
-            
-            // Send response in the format your client expects
-            botNamespace.to(roomId).emit("message", {
-                roomId,
-                sender: userId,
-                aires: aiResponse?.aiRes || null
-            });
-            
-        } catch (error) {
-            console.log(error);
-            // Send error response
-            botNamespace.to(roomId).emit("message", {
-                roomId,
-                sender: userId,
-                aires: "Sorry, I couldn't process your request."
-            });
-        }
+      try {
+        if (!roomId || !query || !userId) return;
+        
+        const aiResponse = await initializeAgent(
+          query,
+          userId,
+          `session-${roomId}-${new Date().toDateString()}`
+        );
+        
+        botNamespace.to(roomId).emit("message", {
+          roomId,
+          sender: userId,
+          aires: aiResponse?.aiRes || null
+        });
+      } catch (error) {
+        console.error("Bot error:", error);
+        botNamespace.to(roomId).emit("message", {
+          roomId,
+          sender: userId,
+          aires: "Sorry, I couldn't process your request."
+        });
+      }
     });
-});
-
-
-
-  expressApp.all("/*splat", (req, res) => {
-    handle(req, res);
   });
 
-  httpServer.listen(3001, () =>
-    console.log("> Listening on http://localhost:3001")
-  );
+  // Parse request bodies
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // ✅ THIS IS THE FIX - Use a callback function instead of wildcards
+  app.use((req, res) => {
+    return handle(req, res);
+  });
+
+  server.listen(port, () => {
+    console.log(`\n✨ Server ready on http://localhost:${port}`);
+    console.log(`   Mode: ${dev ? "development" : "production"}`);
+  });
 }
 
-main().catch(console.error);
-
-
-
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});

@@ -2,11 +2,12 @@
   "name": "nextgig-ai",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "concurrently \"next dev\" \"tsx --tsconfig server/tsconfig.server.json server/server.ts\"",
-    "build": "tsc && next build",
-    "start": "node dist/server/server.js"
+    "build": "next build && tsc -p server/tsconfig.server.json",
+    "start:next": "next start",
+    "start:server": "cross-env NODE_ENV=production node dist/server/server.js",
+    "start": "concurrently \"npm run start:next\" \"npm run start:server\""
   },
   "dependencies": {
     "@google-cloud/aiplatform": "^4.3.0",
@@ -36,6 +37,7 @@
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
@@ -69,6 +71,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/formidable": "^3.4.5",
     "@types/jsonwebtoken": "^9.0.10",
@@ -77,6 +80,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "nodemon": "^3.1.10",

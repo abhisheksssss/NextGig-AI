@@ -206,7 +206,7 @@ async function generateAnswer(state: typeof MyState.State) {
   if (isFollowUp && answer) {
     // Add natural transitions for follow-up questions
     const gemini = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-flash-8b",
+      model: "gemini-2.5-flash",
       temperature: 0,
       apiKey: process.env.GOOGLE_API_KEY,
     });
@@ -255,7 +255,7 @@ async function fetchAnalytics({ messages }: typeof MyState.State, config: any) {
     .join("\n");
 
   const gemini = new ChatGoogleGenerativeAI({
-    model: "gemini-1.5-flash-8b",
+    model: "gemini-2.5-flash",
     temperature: 0,
     apiKey: process.env.GOOGLE_API_KEY,
   });
@@ -545,7 +545,7 @@ async function fallbackNode({ messages }: typeof MyState.State) {
  `;
 
   const gemini = new ChatGoogleGenerativeAI({
-    model: "gemini-1.5-flash-8b",
+    model: "gemini-2.5-flash",
     temperature: 0,
     apiKey: process.env.GOOGLE_API_KEY,
   });
@@ -593,7 +593,7 @@ async function fetchRealTime({ messages }: typeof MyState.State) {
     );
 
     const gemini = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-flash-8b",
+      model: "gemini-2.5-flash",
       temperature: 0,
       apiKey: process.env.GOOGLE_API_KEY,
     });
