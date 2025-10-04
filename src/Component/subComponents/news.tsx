@@ -1,14 +1,26 @@
+import { useUser } from '@/context/user';
 import { fetchGoogleData } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query'
-import React from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import React, { useEffect, useState } from 'react'
 
 const News = () => {
-  const query = '("job openings" OR "hiring now" OR "job news")';
+  const{googleQuery}=useUser();
+  const queryClient = useQueryClient();
+
+const[query,setQuery]=useState('("job openings" OR "hiring now" OR "job news")')
+
+  // const query = '("job openings" OR "hiring now" OR "job news")';
   
+  useEffect(()=>{
+    if(googleQuery){
+      setQuery(googleQuery);
+       queryClient.invalidateQueries({ queryKey: ["GoogleSearch"] })
+    }
+  },[googleQuery, query, queryClient])
  
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["GoogleSearch"],
+    queryKey: ["GoogleSearch",query],
     queryFn:()=>fetchGoogleData(query) ,
     staleTime: 1000 * 60 * 5,        // 5 minutes "fresh"
     refetchOnMount: false,            // don't refetch on remount
@@ -39,7 +51,7 @@ const News = () => {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className=''>
-        <h2 className="text-lg font-bold">Job Realted News</h2>
+        <h2 className="text-lg font-bold">Search Result : {query}</h2>
       </div>
       {data.items.map((item:any , index: number) => (
         <div key={index} className="bg-background text-foreground border-2 dark:shadow-white dark:shadow shadow-xl rounded-lg p-4 hover:shadow-lg transition-shadow">

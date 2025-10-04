@@ -5,324 +5,143 @@ import { mongoDBConncection } from "@/app/dbConfig/db";
 import "@/helper/model/Client.model";
 import Freelancer from "@/helper/model/freelancer.model";
 import { JobRecomandation } from "@/service/JobRecomandationSystem";
-import Redis from "ioredis"
-
-// import { queryEmbedding } from "@/helper/textembedding";
-// import { pinecone } from "@/service/pinecone.service";
-// import Freelancer from "@/helper/model/freelancer.model";
-// import { generateRelatedSkills } from "@/service/gemini.service";
+import Redis from "ioredis";
 
 export async function GET(request: NextRequest) {
   try {
     await mongoDBConncection();
 
     const userID = getDataFromToken(request);
+    if (!userID) throw new Error("User unauthorized");
 
-    if (!userID) {
-      throw new Error("user is unotherized");
-    }
+    const freelancerIdDetails = await Freelancer.find({ userId: userID }).select("Proffession Skills");
 
-    //THis is the recommanddation part
-    const freelancerIdDetails = await Freelancer.find({
-      userId: userID,
-    }).select("Proffession Skills");
-
-
-const redis = new Redis({
-    host: process.env.REDIS_C,
-    port: 19824,
-    username: "default", 
-    password: "3iV7W8pB49zwzIhebJA7eA7Uc8n4fbav"
-    // Remove TLS configuration entirely
-  });
-  
-   redis.on("connect", () => {
-    console.log("✅ Redis connected");
-  });
-  
-  redis.on("error", (err) => {
-    console.error("❌ Redis Error:", err);
-  });
-
-const retrievedIds= await redis.smembers(`user:${userID}:ids`);
-console.log("THese are the ids",retrievedIds);
-
-const jobOp = [];
-let jobIds;
-
-
-if(Array.isArray(retrievedIds)&&retrievedIds.length> 0){
-
-   try {
-    jobIds = typeof retrievedIds === 'string' ? JSON.parse(retrievedIds) : retrievedIds;
-  } catch (parseError) {
-    console.log("Failed to parse recommended jobs:", parseError);
-    jobIds = [];
-  }
-   
-  // Ensure jobIds is an array
-  if (!Array.isArray(jobIds)) {
-    console.log("Recommended jobs is not an array:", jobIds);
-    jobIds = [];
-  }
-
-  console.log("Processing job IDs:", jobIds);
-
-   for (const jobId of jobIds) {
-    console.log("Processing job:", jobId);
-
-    try {
-      // Validate the job ID format (MongoDB ObjectId should be 24 characters)
-      if (!jobId || typeof jobId !== 'string' || jobId.length !== 24) {
-        console.log("Invalid job ID format:", jobId);
-        continue;
-      }
-
-      const jobData = await postJob.findById(jobId).populate({
-        path: "clientId",
-      });
-
-      if (jobData) {
-        jobOp.push(jobData);
-        console.log("Successfully fetched job:", jobId);
-      } else {
-        console.log("Job not found:", jobId);
-      }
-    } catch (error) {
-      console.log("Failed to fetch job:", jobId, "Error:", error);
-      // Continue processing other jobs even if one fails
-    }
-  }
-
- return NextResponse.json({ 
-    data: jobOp, 
-    message: `Found ${jobOp.length} recommended jobs out of ${jobIds.length} requested`,
-    recommendedCount: jobOp.length,
-    requestedCount: jobIds.length
-  }, { status: 200 });
-}
-
-    let recomandedJobs;
-
-    if(freelancerIdDetails){
-      recomandedJobs=await JobRecomandation(JSON.stringify(freelancerIdDetails))
-    }
-
-    console.log("These are the recomanded jobs",recomandedJobs)
-
-// Initialize jobOp array at the beginning
-
-
-
- 
-
-
-
-
-if (recomandedJobs) {
-  // Parse the JSON string if it's a string, otherwise use as is
-  try {
-    jobIds = typeof recomandedJobs === 'string' ? JSON.parse(recomandedJobs) : recomandedJobs;
-  } catch (parseError) {
-    console.log("Failed to parse recommended jobs:", parseError);
-    jobIds = [];
-  }
-
-  // Ensure jobIds is an array
-  if (!Array.isArray(jobIds)) {
-    console.log("Recommended jobs is not an array:", jobIds);
-    jobIds = [];
-  }
-
-  console.log("Processing job IDs:", jobIds);
-
-  for (const jobId of jobIds) {
-    console.log("Processing job:", jobId);
-
-    try {
-      // Validate the job ID format (MongoDB ObjectId should be 24 characters)
-      if (!jobId || typeof jobId !== 'string' || jobId.length !== 24) {
-        console.log("Invalid job ID format:", jobId);
-        continue;
-      }
-
-      const jobData = await postJob.findById(jobId).populate({
-        path: "clientId",
-      });
-
-      if (jobData) {
-        jobOp.push(jobData);
-        console.log("Successfully fetched job:", jobId);
-      } else {
-        console.log("Job not found:", jobId);
-      }
-    } catch (error) {
-      console.log("Failed to fetch job:", jobId, "Error:", error);
-      // Continue processing other jobs even if one fails
-    }
-  }
-
-  // Return the recommended jobs (even if empty)
-
-try {
-  
-  redis.on("connect", () => {
-    console.log("✅ Redis connected");
-  });
-  
-  redis.on("error", (err) => {
-    console.error("❌ Redis Error:", err);
-  });
-await redis.del(`user:${userID}:ids`);
-
-const savedRedish=await redis.sadd(`user:${userID}:ids`,jobIds)
-console.log(savedRedish)
-await redis.expire(`user:${userID}:ids`, 1600);
-
-
-} catch (error) {
-  console.log("Error on connecting in redish:--->",error)
-}
-
-
-  return NextResponse.json({ 
-    data: jobOp, 
-    message: `Found ${jobOp.length} recommended jobs out of ${jobIds.length} requested`,
-    recommendedCount: jobOp.length,
-    requestedCount: jobIds.length
-  }, { status: 200 });
-
-} else {
-  // Fallback: return all jobs if no recommendations
-  console.log("No recommended jobs, fetching all jobs");
-  
-  try {
-    const jobs = await postJob.find().populate({
-      path: "clientId",
+    const redis = new Redis({
+      host: process.env.REDIS_C,
+      port: 19824,
+      username: "default",
+      password: "3iV7W8pB49zwzIhebJA7eA7Uc8n4fbav"
     });
+    redis.on("connect", () => console.log("✅ Redis connected"));
+    redis.on("error", (err) => console.error("❌ Redis Error:", err));
 
-    if (!jobs || jobs.length === 0) {
-      return NextResponse.json({ 
-        data: [], 
-        message: "No jobs found in database" 
+    const retrievedIds = await redis.smembers(`user:${userID}:ids`);
+    const googleOp = await redis.get(`user:${userID}:googleQuery`);
+    console.log("These are the ids from Redis:", retrievedIds);
+    console.log("These are the query",googleOp)
+
+
+    const jobOp = [];
+    let googleQuery;
+    let jobIds: string[] = [];
+
+    if (Array.isArray(retrievedIds) && retrievedIds.length > 0) {
+      jobIds = retrievedIds;
+      console.log("Processing job IDs from Redis:", jobIds);
+
+      for (const jobId of jobIds) {
+        if (!jobId || typeof jobId !== "string" || jobId.length !== 24) {
+          console.log("Invalid job ID format:", jobId);
+          continue;
+        }
+        try {
+          const jobData = await postJob.findById(jobId).populate("clientId");
+          if (jobData) jobOp.push(jobData);
+          else console.log("Job not found:", jobId);
+        } catch (error) {
+          console.log("Failed to fetch job:", jobId, "Error:", error);
+        }
+      }
+
+      return NextResponse.json({
+        data: jobOp,
+        google:googleOp,
+        message: `Found ${jobOp.length} recommended jobs out of ${jobIds.length} requested`,
+        recommendedCount: jobOp.length,
+        requestedCount: jobIds.length
       }, { status: 200 });
     }
 
-    return NextResponse.json({ 
-      data: jobs,
-      message: `Returning ${jobs.length} total jobs`,
-      totalCount: jobs.length
+    // If no cached Redis IDs, get new recommendations
+    let recomandedJobs = null;
+    if (freelancerIdDetails && freelancerIdDetails.length > 0) {
+      recomandedJobs = await JobRecomandation(JSON.stringify(freelancerIdDetails[0]));
+      console.log("These are the recommended jobs:", recomandedJobs);
+    }
+
+    // Narrowing types for recomandedJobs
+    if (
+      recomandedJobs &&
+      typeof recomandedJobs === "object" &&
+      !Array.isArray(recomandedJobs) 
+    ) {
+      jobIds = (recomandedJobs as { jobId: string[] }).jobId;
+      googleQuery=recomandedJobs.google;
+    } else if (Array.isArray(recomandedJobs)) {
+      jobIds = recomandedJobs as string[];
+    } else {
+      console.log("Recommended jobs format unexpected:", recomandedJobs);
+      jobIds = [];
+    }
+
+    console.log("Processing new recommended job IDs:", jobIds);
+
+    for (const jobId of jobIds) {
+      if (!jobId || typeof jobId !== "string" || jobId.length !== 24) {
+        console.log("Invalid job ID format:", jobId);
+        continue;
+      }
+      try {
+        const jobData = await postJob.findById(jobId).populate("clientId");
+        if (jobData) jobOp.push(jobData);
+        else console.log("Job not found:", jobId);
+      } catch (error) {
+        console.log("Failed to fetch job:", jobId, "Error:", error);
+      }
+    }
+
+    try {
+      await redis.del(`user:${userID}:ids`);
+      if (jobIds.length > 0) {
+        await redis.sadd(`user:${userID}:ids`, ...jobIds);
+        if (googleQuery && typeof googleQuery === 'string') {
+  await redis.set(`user:${userID}:googleQuery`, googleQuery, 'EX', 1600); // set with expiry 1600 seconds
+}
+        await redis.expire(`user:${userID}:ids`, 1600);
+      }
+    } catch (error) {
+      console.log("Error updating Redis cache:", error);
+    }
+
+console.log("Google query",googleQuery)
+
+    if (jobOp.length > 0) {
+      return NextResponse.json({
+        data: jobOp,
+        google:googleQuery,
+        message: `Found ${jobOp.length} recommended jobs out of ${jobIds.length} requested`,
+        recommendedCount: jobOp.length,
+        requestedCount: jobIds.length
+      }, { status: 200 });
+    }
+
+    // Fallback: no recommended jobs, return all jobs from database
+    console.log("No recommended jobs found, returning all jobs");
+    const allJobs = await postJob.find().populate("clientId");
+    if (!allJobs || allJobs.length === 0) {
+      return NextResponse.json({ data: [], message: "No jobs found in database" }, { status: 200 });
+    }
+    return NextResponse.json({
+      data: allJobs,
+      message: `Returning ${allJobs.length} total jobs`,
+      totalCount: allJobs.length
     }, { status: 200 });
 
   } catch (error) {
-    console.error("Error fetching all jobs:", error);
-    return NextResponse.json({ 
-      error: "Failed to fetch jobs",
-      message: error
-    }, { status: 500 });
-  }
-}
-
-
-
-    //  const res=await generateRelatedSkills(freelancerIdDetails[0].Proffession,freelancerIdDetails[0].Skills)
-
-    //  if(res){
-    //    const jobs = await postJob.find({
-    //             skills:{
-    //                 $elemMatch:{
-    //                     $regex:res.relatedSkills.join("|"),
-    //                     $options:"i"
-    //                 }
-    //             }
-    //          }).populate({
-    //             path:"clientId"
-    //          })
-
-    //          if(!jobs){
-    // throw new  Error("No jobs founded")
-    // }
-
-    // return NextResponse.json({data:jobs},{status:200})
-
-    //  }else{
-    // const jobs = await postJob.find().populate({
-    //             path:"clientId"
-    //          });
-
-    //   if(!jobs){
-    // throw new  Error("No jobs founded")
-    // }
-
-    // return NextResponse.json({data:jobs},{status:200})
-
-    //  }
-
-    // const jobs = await postJob.find().populate({
-    //   path: "clientId",
-    // });
-
-
-
-    // if (!jobs) {
-    //   throw new Error("No jobs founded");
-    // }
-
-//  for(let i=4;i<11;i++){
-
-//    try {
-//     // Generate embedding for job description
-//     const embedding = await queryEmbedding(JSON.stringify(jobs[i]));
-  
-  
-//   // console.log("This is embedding",embedding)
-  
-//     // Ensure embedding is a number[]
-//     const values = Array.isArray(embedding) && embedding ;
-  
-//     if(!values){
-//       throw new Error("No embedding gnerated")
-//     }
-  
-//   // console.log("These are the value",values)
-  
-//     // Use a fixed index name (created beforehand in Pinecone)
-//     const index = pinecone.index("jobs");
-  
-//     // console.log('This is the index',index);
-  
-  
-  
-//     // Build vector
-//     const vector = [
-//       {
-//         id: `job-${jobs[i]._id}`,
-//         values: values,
-//         metadata: {
-//           description: jobs[i].description, // or whole job text
-//           jobId: jobs[i]._id.toString(),
-//           skills:jobs[i].skills,
-//           budget:`$ ${jobs[i].budget}`
-//         },
-//       },
-//     ];
-  
-//     // Upsert vector into Pinecone
-//     await index.upsert(vector);
-  
-//     console.log("✅ Job embedding stored in Pinecone!");
-//   } catch (error) {
-//     console.log("❌ Error in vector embedding in posting jobs", error);
-//   }
-//  }   
-
-
-
-    // return NextResponse.json({ data: jobs }, { status: 200 });
-  } catch (error) {
+    console.error("Error in GET handler:", error);
     if (error instanceof Error) {
-      console.log("Error in GetJob", error);
-      return NextResponse.json({ data: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json({ error: "Unknown error" }, { status: 500 });
   }
 }

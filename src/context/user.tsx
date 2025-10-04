@@ -1,6 +1,6 @@
 "use client"
 import axiosInstance from "@/lib/axios";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 
 
 export interface IUser {
@@ -84,6 +84,8 @@ interface TokenContextType {
   user:  IUser|Ifreelancer|IClient| null;
   setUser: (user: IUser|Ifreelancer|IClient | null) => void;
     getUser: () => Promise<void>;
+    googleQuery:string|null;
+     setGoogleQuery: Dispatch<SetStateAction<string | null>>; 
 }
 
 const UserContext= createContext<TokenContextType|undefined>(undefined);
@@ -91,6 +93,7 @@ const UserContext= createContext<TokenContextType|undefined>(undefined);
 const UserProvider = ({children}:{children: React.ReactNode}) => {
 
     const [user,setUser]=useState<IUser|Ifreelancer|IClient|null>(null)
+    const[googleQuery,setGoogleQuery]=useState<string|null>(null)
 
   const getUser=async()=>{
      try {
@@ -117,7 +120,7 @@ getUser()
 
 
   return (
-    <UserContext.Provider value={{user,setUser,getUser}}>
+    <UserContext.Provider value={{user,setUser,getUser,setGoogleQuery,googleQuery}}>
     {children}
     </UserContext.Provider>
   )

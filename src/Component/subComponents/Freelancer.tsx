@@ -1,10 +1,11 @@
 "use client"
-import React from 'react'
+import React, { useEffect } from 'react'
 import JobCards from './JobCards'
 import { useQuery } from '@tanstack/react-query'
 import { fetchJobs } from '@/lib/api'
 import News from './news';
 import Loader from '../loader'
+import { useUser } from '@/context/user'
 // import useSocket from '@/hooks/useSocket';
 
 
@@ -25,10 +26,11 @@ const Freelancer = () => {
 
   // const socketRef=useSocket()
 
+  const{setGoogleQuery}=useUser();
+
 const {data,isLoading,isError,error}=useQuery({
   queryKey: ['freelancer'],
   queryFn:fetchJobs,
-
      staleTime: 1000 * 60 * 5,          // 5 minutes “fresh”
     refetchOnMount: false,             // don’t refetch on remount
     refetchOnWindowFocus: false,       // ignore tab focus
@@ -38,7 +40,13 @@ const {data,isLoading,isError,error}=useQuery({
 
 
 
-
+useEffect(()=>{
+  if(data){
+    console.log("THis is the data",data.google)
+    setGoogleQuery(data.google);
+  }
+// setGoogleQuery()
+},[data, setGoogleQuery])
 
 
 
