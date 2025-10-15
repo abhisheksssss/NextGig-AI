@@ -12,13 +12,15 @@ import {
 } from "@langchain/langgraph";
 import { tavily } from "@tavily/core";
 import { IClient, Ifreelancer } from "@/context/user";
-// import { CustomSearchResult } from "@/helper/types";
-// import { fetchGoogleData } from "@/lib/api";
 import { ChatGroq } from "@langchain/groq";
 import { DynamicTool } from "@langchain/core/tools";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { AgentExecutor, createReactAgent } from "langchain/agents";
 import { pull } from "langchain/hub";
+import { fetchGoogleData } from "@/lib/api";
+
+// Create ONE memory instance at module level that persists across function calls
+const sessionMemory = new MemorySaver();
 
 // Define a custom state that extends MessagesAnnotation
 const MyState = Annotation.Root({
@@ -38,7 +40,6 @@ export interface Source {
   name: string;
 }
 
-// Interface for a single article object
 export interface Article {
   source: Source;
   author: string | null;
@@ -46,11 +47,10 @@ export interface Article {
   description: string | null;
   url: string;
   urlToImage: string | null;
-  publishedAt: string; // ISO 8601 date string
+  publishedAt: string;
   content: string | null;
 }
 
-// The main interface for the entire API response
 export interface toolNews {
   status: "ok" | "error";
   totalResults: number;
@@ -88,6 +88,27 @@ const realTimeData = new DynamicTool({
     }
   },
 });
+
+const googleSearch = new DynamicTool({
+  name: "google_search",
+  description: "use this tool to return query for google search",
+  func: async (Input: string) => {
+    try {
+      if (!Input || Input.trim().length === 0) {
+        return "Invalid query";
+      }
+      const answer = await fetchGoogleData(Input);
+      if (answer?.items.length > 0) {
+        return answer.items;
+      }
+      return "No results found";
+    } catch (error) {
+      console.log(error);
+      return "Search unavailable";
+    }
+  },
+});
+
 const fetchNewsData = new DynamicTool({
   name: "Fetch real time news data ",
   description: "provide the input and get the real time news data from ",
@@ -113,14 +134,6 @@ const fetchNewsData = new DynamicTool({
         }
       }
 
-      // if (answer && answer.results) {
-      //       const formattedResults = answer.results.map((result, index) =>
-      //         `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
-      //       ).join("\n\n---\n\n");
-
-      //       return formattedResults;
-      //     }
-
       return "No results found.";
     } catch (error) {
       console.log(error);
@@ -130,9 +143,9 @@ const fetchNewsData = new DynamicTool({
 });
 
 function getConversationContext(message: any[]) {
-  console.log("THis is the conversation message", message);
+  console.log("This is the conversation message", message);
 
-  const CONTEXT_WINDOW = 6; // Fixed from 0
+  const CONTEXT_WINDOW = 6;
   let contextMessage = message.slice(-CONTEXT_WINDOW);
 
   if (message.length > 10) {
@@ -162,7 +175,6 @@ function getConversationContext(message: any[]) {
     .join("\n");
 }
 
-// Helper function to extract string content from AI messages
 function extractContent(content: any): string {
   if (typeof content === "string") {
     return content;
@@ -185,11 +197,10 @@ function extractContent(content: any): string {
   return String(content || "");
 }
 
-// **FIX: Only use the current question's answer, not accumulate all states**
 async function generateAnswer(state: typeof MyState.State) {
   let answer = "";
 
-  // **KEY FIX: Only use the current intent's result, clear others**
+  // Only use the current intent's result
   if (state.intent === "analytics" && state.analytics) {
     answer = state.analytics;
   } else if (state.intent === "realtime" && state.realtime) {
@@ -204,7 +215,6 @@ async function generateAnswer(state: typeof MyState.State) {
   const isFollowUp = state.messages && state.messages.length > 2;
 
   if (isFollowUp && answer) {
-    // Add natural transitions for follow-up questions
     const gemini = new ChatGoogleGenerativeAI({
       model: "gemini-2.5-flash",
       temperature: 0,
@@ -222,17 +232,15 @@ Add a brief, natural connecting phrase if this is a follow-up question. Keep the
       const flowResponse = await gemini.invoke([new HumanMessage(flowPrompt)]);
       answer = extractContent(flowResponse.content);
     } catch (error) {
-      // Fall back to original answer if flow enhancement fails
       console.log(error);
     }
   }
 
-  // **FIX: Clear the state values after using them to prevent accumulation**
+  // Clear the state values after using them
   return {
     messages: [...(state.messages || []), new AIMessage(answer)],
     lastIntent: state.intent,
     conversationTopic: state.intent,
-    // Clear working states
     analytics: "",
     realtime: "",
     direct: "",
@@ -269,7 +277,7 @@ async function fetchAnalytics({ messages }: typeof MyState.State, config: any) {
         FieldOFintrest: userId.Field,
       });
 
-      console.log("THis is the client data", clientData);
+      console.log("This is the client data", clientData);
 
       const systemPrompt = `You are a Client Analysis Helper. Look at client information and give detailed, helpful advice in simple English.
 
@@ -313,12 +321,12 @@ async function fetchAnalytics({ messages }: typeof MyState.State, config: any) {
 - Always use bullet points for easy reading
 - Give complete answers with practical tips
 
-
 IMPORTANT: Consider the conversation context. If the previous conversation was about weather and the user asks "what about new york", this is still a REALTIME weather request.
 
 CONVERSATION CONTEXT:
 ${conversationContext}
- `;
+`;
+
       const aiRes = await gemini.invoke([
         new HumanMessage(`${systemPrompt}
 
@@ -333,17 +341,17 @@ USER REQUEST: ${
 
       return {
         analytics: aiRes.content,
-        // Clear other states
         realtime: "",
         direct: "",
+        realtimejobs: "",
       };
     } catch (error) {
       console.log(error);
       return {
         analytics: "failed",
-        // Clear other states
         realtime: "",
         direct: "",
+        realtimejobs: "",
       };
     }
   }
@@ -408,80 +416,58 @@ USER REQUEST: ${
 - Always use bullet points for easy reading
 - Give complete answers with practical advice
 - Focus on helping both hiring and profile improvement
+`;
 
-
-  `;
       const aiRes = await gemini.invoke([
         new HumanMessage(`${systemPrompt}
 
-CLIENT PROFILE DATA:
+FREELANCER PROFILE DATA:
 ${freelancerData}
 
 USER REQUEST: ${
           userMsg ||
-          "Please provide a complete analysis of this client profile data."
+          "Please provide a complete analysis of this freelancer profile data."
         }`),
       ]);
 
       return {
         analytics: aiRes.content,
-        // Clear other states
         realtime: "",
         direct: "",
+        realtimejobs: "",
       };
     } catch (error) {
       console.log(error);
       return {
         analytics: "Failed to Fetch Data",
-        // Clear other states
         realtime: "",
         direct: "",
+        realtimejobs: "",
       };
     }
   }
 
   return {
     analytics: `null`,
-    // Clear other states
     realtime: "",
     direct: "",
+    realtimejobs: "",
   };
 }
+
 async function doNotAnswer(state: typeof MyState.State) {
   return {
-    analytics: "I can only anser the question related to you profile and jobs",
-    // Clear other states
+    direct: "I can only answer questions related to your profile and jobs",
+    analytics: "",
     realtime: "",
-    direct: "",
+    realtimejobs: "",
   };
 }
 
-// async function AnalysisOfPdf({ messages }: typeof MyState.State, config: any) {
-//   const userData=config.configurable.userId;
-
-//  const userMsg = messages[messages.length - 1]?.content || "";
-
-//  const pdfData={
-//   pdfUrl:userData.resumePdf,
-//   id:userData.userId,
-//   msg:userMsg.toString()
-//  }
-
-//  const chunks=await processPdf(pdfData)
-
-//  return{
-//   pdfA
-//  }
-
-// }
-
-// **FIX: Improved intent classification with conversation context**
 async function classifyIntent({ messages }: typeof MyState.State) {
   console.log("These are the messages", messages);
 
   const userMsg = messages[messages.length - 1]?.content || "";
-
-  // **FIX: Include conversation context for better intent classification**
   const conversationContext = getConversationContext(messages);
 
   console.log(conversationContext);
@@ -522,7 +508,6 @@ Reply with ONLY: analytics, realtime, realtimejobs, other, or blocked
   const intent = extractContent(intentResp.content).toLowerCase().trim();
   return {
     intent,
-    // Clear other states
     analytics: "",
     realtimejobs: "",
     realtime: "",
@@ -539,10 +524,10 @@ async function fallbackNode({ messages }: typeof MyState.State) {
   console.log("This is the conversation context:", conversationContext);
 
   const systemPrompt = `You are a helpful AI assistant. Always provide clear, concise answers based on the current conversation and the user's past inputs. Maintain the context of the discussion without repeating unnecessary details.
- Do not make assumptions beyond what the user has shared. Keep responses natural and focused on solving the user's problems.
- CONVERSATATION CONTEXT:
- ${conversationContext}
- `;
+Do not make assumptions beyond what the user has shared. Keep responses natural and focused on solving the user's problems.
+CONVERSATION CONTEXT:
+${conversationContext}
+`;
 
   const gemini = new ChatGoogleGenerativeAI({
     model: "gemini-2.5-flash",
@@ -561,11 +546,12 @@ async function fallbackNode({ messages }: typeof MyState.State) {
 
   return {
     direct: extractContent(aiMsg.content),
-    // Clear other states
     analytics: "",
     realtime: "",
+    realtimejobs: "",
   };
 }
+
 async function fetchRealTime({ messages }: typeof MyState.State) {
   try {
     console.log("These are the messages by human", messages);
@@ -631,13 +617,11 @@ IMPORTANT: Consider the conversation context. If the previous conversation was a
 CONVERSATION CONTEXT:
 ${conversationContext}
 
+Your final output should be a smooth, well-written paragraph based only on the above.`;
 
-Your final output should be a smooth, well-written paragraph based only on the above.}`;
-
-    // 👇 AI Invocation
     const aiRes = await gemini.invoke([
       new SystemMessage(systemPrompt),
-      new HumanMessage(`${userMsg}`), // user's actual question
+      new HumanMessage(`${userMsg}`),
     ]);
     const intent = extractContent(aiRes.content).toLowerCase().trim();
     console.log("This is the ai response", intent);
@@ -646,6 +630,7 @@ Your final output should be a smooth, well-written paragraph based only on the a
       realtime: aiRes.content,
       analytics: "",
       direct: "",
+      realtimejobs: "",
     };
   } catch (error) {
     console.log(error);
@@ -653,9 +638,11 @@ Your final output should be a smooth, well-written paragraph based only on the a
       realtime: "Server error",
       analytics: "",
       direct: "",
+      realtimejobs: "",
     };
   }
 }
+
 async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
   try {
     console.log("These are the messages by human", messages[0]);
@@ -663,14 +650,14 @@ async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
 
     const conversationContext = getConversationContext(messages);
 
-    console.log("THis is the conversation context", conversationContext);
+    console.log("This is the conversation context", conversationContext);
 
     const model = new ChatGroq({
       model: "llama-3.3-70b-versatile",
       temperature: 0,
     });
 
-    const tools = [realTimeData, fetchNewsData];
+    const tools = [realTimeData, fetchNewsData, googleSearch];
 
     const prompt = await pull<PromptTemplate>("hwchase17/react");
 
@@ -696,150 +683,24 @@ async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
         realtimejobs: response.output,
         analytics: "",
         direct: "",
+        realtime: "",
       };
     } catch (error) {
-      console.log("Error during agent execution :", error);
-      return "An error occurred while processing your result";
+      console.log("Error during agent execution:", error);
+      return {
+        realtimejobs: "An error occurred while processing your request",
+        analytics: "",
+        direct: "",
+        realtime: "",
+      };
     }
-
-    //     const gemini2 = new ChatGoogleGenerativeAI({
-    //       model: "gemini-2.0-flash",
-    //       temperature: 0,
-    //       apiKey: process.env.GOOGLE_API_KEY,
-    //     });
-
-    //     const systemPrompt2 = `You are a query generation assistant for the GNews API. Your task is to convert user-friendly search intents into syntactically correct, URL-encoded query strings for the \`q\` parameter. Follow these rules strictly:
-
-    // 1. All queries must be URL-encoded before being returned.
-    // 2. If the user includes special characters (e.g., !, ?, -, etc.), they must be surrounded with double quotes.
-    // 3. Use logical operators (AND, OR, NOT) appropriately:
-    //    - Use AND when all terms must be present (this is the default behavior when a space is used).
-    //    - Use OR to include articles with either term. OR has higher precedence than AND.
-    //    - Use NOT to exclude specific terms. NOT must precede each word or phrase.
-    // 4. Always use parentheses for complex expressions to clarify logical precedence.
-    // 5. For exact matches, wrap the phrase in double quotes.
-    // 6. Return only the final URL-encoded string—no explanation or additional text. The output must be ready to append to the \`q=\` parameter in a URL.
-
-    // Examples:
-    // - Input: Search for Apple or Microsoft, but not iPhone
-    //   Output: Apple%20OR%20Microsoft%20NOT%20iPhone
-
-    // - Input: Find exact phrase "Apple iPhone 13" but exclude "Apple iPhone 14"
-    //   Output: %22Apple%20iPhone%2013%22%20AND%20NOT%20%22Apple%20iPhone%2014%22
-
-    // - Input: Show results for Intel i7 or "i9-14900K" but exclude AMD and "i7-14700K"
-    //   Output: (Intel%20AND%20(i7%20OR%20%22i9-14900K%22))%20AND%20NOT%20AMD%20AND%20NOT%20%22i7-14700K%22
-
-    // Your task: Given a natural-language search request from the user, correct any grammar or structure if necessary, then generate the final URL-encoded GNews \`q\` query string based on the intent. Return only the query string.
-    // `;
-    //     const aires = await gemini2.invoke([
-    //       new SystemMessage(systemPrompt2),
-    //       new HumanMessage(`${userMsg}`),
-    //     ]);
-
-    //     const fetchData = await fetch(
-    //       `https://gnews.io/api/v4/search?q=${aires.content}&apikey=${process.env.GNEWS_API_KEY}`
-    //     );
-    //     const answer = await fetchData.json();
-    //     const fetchData1 = await fetch(
-    //       `https://newsapi.org/v2/everything?q=${aires.content}&apiKey=${process.env.NEWS_API_KEY}`
-    //     );
-    //     const answer1 = await fetchData1.json();
-
-    //    const fetchData2= await fetchGoogleData(`${aires?.content}`)
-
-    //        const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
-    //     const answer_Tavily = await tool.search(`${aires.content}`);
-
-    //      const data4 =answer_Tavily.results.slice(0, 4).map((m) => ({
-    //         content: m.content,
-    //       }));
-
-    // const data1 = answer.articles.slice(0, 4).map((m: Article) => ({
-    //   title: m.title,
-    //   description: m.description,
-    //   content: m.content,
-    // }));
-
-    // const data2 = answer1.articles.slice(0, 4).map((m: Article) => ({
-    //   title: m.title,
-    //   description: m.description,
-    //   content: m.content,
-    // }));
-
-    // const data3 = fetchData2.items.slice(0, 4).map((m: CustomSearchResult) => ({
-    //   snippet: m.snippet,
-    // }));
-
-    // const data = JSON.stringify([...data1, ...data2, ...data3, ...data4]);
-
-    //     const gemini = new ChatGoogleGenerativeAI({
-    //       model: "gemini-1.5-flash-8b",
-    //       temperature: 0,
-    //       apiKey: process.env.GOOGLE_API_KEY,
-    //     });
-
-    // const systemPrompt = `
-    // You are a helpful AI assistant who gives clear, natural, and job-focused answers using ONLY the provided data. Do not include any extra info, personal opinion, or assumptions.
-
-    // ✳️ What to do:
-    // - Read the data array carefully and write a smooth, natural response.
-    // - Combine related points or patterns (e.g., job trends, hiring news) into short paragraphs or bullet points.
-    // - Use a friendly, confident, and informative tone.
-    // - Stick STRICTLY to what’s in the data — don’t invent or add anything.
-
-    // ✳️ Style rules:
-    // - Write in full sentences and paraphrase the original text clearly.
-    // - Use 2–4 short sections (paragraphs or bullets) to highlight trends or examples.
-    // - Focus only on jobs, hiring, career opportunities, or market news.
-    // - If multiple entries say similar things, combine them into one point.
-    // - Do NOT quote or copy text directly from the data.
-    // - Do NOT include sources, extra facts, or filler.
-
-    // ✳️ Format:
-    // - Use short PARAGRAPHS to explain themes.
-    // - Use BULLETS to list trends, jobs, or market signals.
-    // - Keep it relevant to the user's question.
-    // - End with a positive, clear tone if appropriate.
-
-    // 🚫 Never say:
-    // - “I don’t have data”
-    // - “According to external sources”
-    // - “Based on my knowledge”
-    // - “The following data shows…”
-
-    // 📌 If the data does not match the question, just say:
-    // "Data not available."
-
-    // After writing the response, explain it in very simple and easy-to-understand language for all users.
-
-    // ### Provided Info:
-    // DATA = ${data}
-
-    // ### Chat Context:
-    // ${conversationContext}
-
-    // `;
-
-    //     const aiRes = await gemini.invoke([
-    //       new SystemMessage(systemPrompt),
-    //       new HumanMessage(`${conversationContext}\n\n${userMsg}`), // user's actual question
-    //     ]);
-
-    //   const intent = extractContent(aires.content).toLowerCase().trim();
-    //     console.log("This is the ai response", intent);
-
-    return {
-      realtimejobs: "No result founded",
-      analytics: "",
-      direct: "",
-    };
   } catch (error) {
     console.log(error);
     return {
       realtimejobs: "Server error",
       analytics: "",
       direct: "",
+      realtime: "",
     };
   }
 }
@@ -847,11 +708,11 @@ async function fetchRealTimeDataForJobs({ messages }: typeof MyState.State) {
 export async function initializeAgent(
   userMessage: string,
   userId: Ifreelancer | IClient,
-  sessionId?: string //optional session id
+  sessionId: string // Now required parameter
 ) {
   try {
-    // Create memory saver for persistence
-    const memory = new MemorySaver();
+    // Use the shared memory instance
+    const memory = sessionMemory;
 
     // Build the workflow
     const workflow = new StateGraph(MyState)
@@ -874,24 +735,22 @@ export async function initializeAgent(
       .addEdge("fetchAnalytics", "generateAnswer")
       .addEdge("fetchRealTime", "generateAnswer")
       .addEdge("fetchJobData", "generateAnswer")
+      .addEdge("blockNode", "generateAnswer")
       .addEdge("fallback", "generateAnswer")
       .addEdge("generateAnswer", "__end__");
 
     // Compile with checkpointer for persistence
     const app = workflow.compile({ checkpointer: memory });
 
-    // Create config with consistent thread_id for conversation persistence
-
-    const thread_id = sessionId || `user-${userId._id}-${Date.now()}`;
-
+    // Use the provided sessionId directly
     const config = {
       configurable: {
-        thread_id: thread_id,
+        thread_id: sessionId,
         userId,
       },
     };
 
-    console.log("=== First Question ===");
+    console.log("=== Processing message with sessionId:", sessionId);
     const finalState = await app.invoke(
       {
         messages: [new HumanMessage(`${userMessage}`)],
@@ -903,9 +762,17 @@ export async function initializeAgent(
 
     return {
       aiRes: finalState.messages[finalState.messages.length - 1].content,
+      sessionId: sessionId, // Return the sessionId for frontend to reuse
     };
-    // Optional: Test analytics intent
   } catch (error) {
     console.error("Error in initializeAgent:", error);
+    throw error;
   }
+}
+
+// Optional: Function to clear chat session when user leaves
+export function clearChatSession(sessionId: string) {
+  console.log(`Session ${sessionId} ended - memory will be cleared on next restart`);
+  // MemorySaver is in-memory, so it will be garbage collected
+  // You don't need to manually clear it unless you want to
 }

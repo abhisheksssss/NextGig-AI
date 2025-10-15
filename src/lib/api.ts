@@ -223,3 +223,32 @@ export  const getWebSearchData=async(query:string|string[],queryType:string|stri
         console.log(error)
     }
 }
+
+export const updateViewData=async(freelancerId: string,
+  jobId: string,
+  duration: number)=>{
+    try {
+        const res= await axiosInstance.post("/api/tracking/view",{
+freelancerId,
+jobId,
+duration
+        })
+        return res?.data?.message
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
+export const updateRejectData=async(freelancerId:string,jobId:string)=>{
+try {
+    const res= await axiosInstance.post("/api/tracking/rejectedJobs",{
+        freelancerId,
+        jobId
+    })
+
+    return res?.data?.message
+} catch (error) {
+    console.log(error)
+}
+}

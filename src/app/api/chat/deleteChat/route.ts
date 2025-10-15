@@ -11,9 +11,9 @@ export async function DELETE(request:NextRequest) {
          const userId= getDataFromToken(request)
 
 const deletingMessageId=searchParams.get("deleteMessage")
-if(!deletingMessageId || !userId){
-throw new Error("NO user founded")
-}
+ if(!deletingMessageId || !userId){
+ throw new Error("NO user founded")
+ }
 
 const deleteMessage=await messageModel.findByIdAndDelete(deletingMessageId)
 
@@ -31,3 +31,4 @@ return NextResponse.json("Failed to delete chat")
        } 
     }
 }
+

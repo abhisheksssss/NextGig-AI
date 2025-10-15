@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation'
-import {applyForJob, fetchJob, updateChatWith} from '@/lib/api'
+import {applyForJob, fetchJob, updateChatWith, updateRejectData} from '@/lib/api'
 import GetBack from '@/Component/subComponents/getBack';
 import Image from 'next/image';
 import { Check, MessageCircleMore, Send } from 'lucide-react';
@@ -62,19 +62,23 @@ const ApplyForJob = () => {
 
   const [disableButton,setDisableButton]=useState(false)
 
+
   const {data, isLoading, isError, error} = useQuery<JobData, Error>({
     queryKey: ['job', id ?? null],
     queryFn: () => fetchJob(id ? id.toString() : null)
   })
 
 const { mutate: updateChatMutation, isPending } = useMutation({
-  mutationFn: (chatWithId: string|null) => updateChatWith(chatWithId),
+  mutationFn: async(chatWithId: string|null) =>await updateChatWith(chatWithId),
   onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chatRoom'] });
     router.push("/chat");
 
   }
 });
+const {mutate:updateRejectMutation}=useMutation({
+  mutationFn:(jobId:string)=>updateRejectData((user as Ifreelancer)._id,jobId)
+})
 
 
 useEffect(()=>{
@@ -106,7 +110,12 @@ if(isError){
 
 return (
     <div className='w-full h-full max-w-full overflow-x-hidden custom-scrollbar'>
-        <div className='px-4'>
+        <div className='px-4' onClick={()=>{
+          if(!disableButton && id && user?.role=="Freelancer"){
+            console.log("Hello world")
+            updateRejectMutation(id.toString())
+          }
+        }}>
             <GetBack/>
         </div>
         <div className='h-full w-full custom-scrollbar'>
