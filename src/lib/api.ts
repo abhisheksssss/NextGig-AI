@@ -252,3 +252,12 @@ try {
     console.log(error)
 }
 }
+
+export const forYouData=async()=>{
+try {
+    const res=await axiosInstance.get("/api/tracking/trackedJobs")
+    return res?.data?.data
+} catch (error) {
+    console.log(error)
+}
+}

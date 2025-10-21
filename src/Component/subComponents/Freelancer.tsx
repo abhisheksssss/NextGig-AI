@@ -10,6 +10,7 @@ import { useUser } from '@/context/user'
 import { Briefcase, Filter, Search, TrendingUp, X, Sparkles } from 'lucide-react'
 import FilterModal from './filter'
 import TrendingJobsList from './TrendinJobList'
+import RecommendedJobsList from './recommendedJobsList'
 
 export interface JobPostPayload1 {
   _id: string;
@@ -239,13 +240,15 @@ const Freelancer = () => {
             {activeFilter === 'trending' ? (
               // Show trending jobs component
               <TrendingJobsList />
-            ) : (
+            ): activeFilter === 'recommended' ? (
+  <RecommendedJobsList />
+) 
+            : (
               // Show regular/recommended jobs
               <div className="space-y-4">
                 {filteredJobs && filteredJobs.length > 0 ? (
                   filteredJobs.map((job: JobPostPayload1) => (
-                    <div key={job._id}>
-          
+                    <div key={job._id}>      
                       <JobCards
                         clientId={job.clientId}
                         description={job.description}

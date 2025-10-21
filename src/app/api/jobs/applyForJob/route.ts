@@ -45,6 +45,8 @@ export async function PUT(request: NextRequest) {
       { new: true } // returns the updated document
     );
 
+    
+
     if (!updateChatWith) {
       return NextResponse.json(
         { error: "Error in updating fields" },
