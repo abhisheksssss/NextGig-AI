@@ -215,9 +215,9 @@ export const fetchGoogleData=async(query:string)=>{
       } 
 }
 
-export  const getWebSearchData=async(query:string|string[],queryType:string|string[])=>{
+export  const getWebSearchData=async(query:string|string[],queryType:string|string[],userId:string|undefined)=>{
     try {
-        const res= await axiosInstance.get(`/api/search?query=${query}&queryType=${queryType}`) 
+        const res= await axiosInstance.get(`/api/search?query=${query}&queryType=${queryType}&userId=${userId}`) 
         return res.data.data
     } catch (error) {
         console.log(error)
