@@ -12,10 +12,12 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/context/user';
 
 const WebPage: React.FC = () => {
   const { category, query } = useParams();
   const router=useRouter()
+  const {user}=useUser();
 
   const decodedCategory =
     typeof category === "string" ? decodeURIComponent(category) : category;
@@ -28,7 +30,7 @@ const WebPage: React.FC = () => {
       if (!decodedCategory || !decodedQuery) {
         throw new Error('Category and query are required');
       }
-      return getWebSearchData(decodedQuery, decodedCategory);
+      return getWebSearchData(decodedQuery, decodedCategory,user?._id);
     },
     enabled: !!decodedCategory && !!decodedQuery
   });

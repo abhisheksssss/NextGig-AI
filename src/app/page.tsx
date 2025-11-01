@@ -1,14 +1,8 @@
 "use client"
 
 
-
-
-
 import Main from "@/Component/Main";
 import {Header }from "@/Component/Header";
-
-
-
 
 
 

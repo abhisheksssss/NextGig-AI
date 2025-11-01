@@ -6,6 +6,7 @@ import Freelancer from "@/helper/model/freelancer.model";
 import PostJob from "@/helper/model/postJob";
 import { NextRequest, NextResponse } from "next/server";
 import { PipelineStage } from "mongoose";
+import Tracking from "@/helper/model/feedback.model";
 
 const escapeRegex = (s: string) =>
   s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     let queryFromUser = searchParams.get("query");
     let queryType = searchParams.get("queryType");
+    const freelancerId= searchParams.get("freelancerId")
 
     if (!queryFromUser || !queryType) {
       return NextResponse.json(
@@ -26,6 +28,17 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+if(userId && queryType=="Jobs"){
+  const savingQueryInTrackingData=await Tracking.findOneAndUpdate({freelancerId:freelancerId},
+    {
+      $addToSet:{
+          searchHistoryOfFreelancer: queryFromUser
+      }
+    }
+  )
+
+}
 
     queryFromUser = decodeURIComponent(queryFromUser.trim());
     queryType = decodeURIComponent(queryType.trim());
