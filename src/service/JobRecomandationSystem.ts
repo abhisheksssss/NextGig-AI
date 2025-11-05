@@ -9,13 +9,16 @@ import {
 } from "@pinecone-database/pinecone";
 import { fetchGoogleData } from "@/lib/api";
 
+
 interface userEmbeddingData {
   _id: string;
   Proffession: string;
   Skills: string[];
 }
 
+
 const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
+
 
 const realTimeData = new DynamicTool({
   name: "real_time_search",
@@ -41,6 +44,7 @@ const realTimeData = new DynamicTool({
   },
 });
 
+
 const googleSearch = new DynamicTool({
   name: "google_search",
   description: "use this tool to return query for google search",
@@ -61,6 +65,7 @@ const googleSearch = new DynamicTool({
   },
 });
 
+
 function formatMatches(matches: ScoredPineconeRecord<RecordMetadata>[]) {
   return matches
     .map((m, idx) => {
@@ -80,23 +85,28 @@ function formatMatches(matches: ScoredPineconeRecord<RecordMetadata>[]) {
     .join("\n\n");
 }
 
+
 function formatUserData(user: userEmbeddingData) {
   return `User Profile:
 - Profession: ${user?.Proffession}
 - Skills: ${user?.Skills.join(", ")}`;
 }
 
+
 function extractJobIds(formattedJobs: string): string[] {
   const matches = formattedJobs.match(/Job ID: ([a-f0-9]+)/gi);
   return matches ? matches.map((m) => m.replace("Job ID: ", "")) : [];
 }
 
+
 export async function JobRecomandation(query: string) {
   console.log("Input query:", JSON.parse(query));
+
 
   const userData: userEmbeddingData = JSON.parse(query);
   const index = pinecone.index("userembedding");
   const result = await index.fetch([`user-${userData._id}`]);
+
 
   if (Object.keys(result.records).length === 0) {
     console.log("User embedding not found in Pinecone, creating new embedding...");
@@ -126,13 +136,16 @@ export async function JobRecomandation(query: string) {
     }
   }
 
+
   const userEmbedding = result.records[`user-${userData._id}`];
   console.log("User embedding found:", userEmbedding.id);
+
 
   if (!userEmbedding.values) {
     console.error("User embedding has no values");
     return [];
   }
+
 
   try {
     const index2 = pinecone.index("jobs");
@@ -143,56 +156,68 @@ export async function JobRecomandation(query: string) {
       includeMetadata: true,
     });
 
+
     console.log(`Total matches from Pinecone: ${queryResponse.matches.length}`);
     console.log(
       "Match scores:",
       queryResponse.matches.map((m) => m.score?.toFixed(3))
     );
 
-    // Adaptive threshold
+
     const scores = queryResponse.matches.map((m) => m.score || 0);
     const adaptiveThreshold = Math.max(
       MIN_RELEVANCE_SCORE,
       scores.length > 0 ? scores[0] * 0.6 : MIN_RELEVANCE_SCORE
     );
 
+
     const relevantMatches = queryResponse.matches.filter(
       (match) => match.score && match.score >= adaptiveThreshold
     );
 
+
     console.log(
       `Found ${queryResponse.matches.length} matches, ${relevantMatches.length} above threshold ${adaptiveThreshold.toFixed(3)}`
     );
+
 
     if (relevantMatches.length === 0) {
       console.warn("No relevant matches found");
       return [];
     }
 
+
     const formattedJobs = formatMatches(relevantMatches);
     const formattedUser = formatUserData(userData);
     const allJobIds = extractJobIds(formattedJobs);
 
+
     console.log(`Extracted ${allJobIds.length} job IDs from matches`);
+
 
     const model = new ChatGroq({
       model: "llama-3.3-70b-versatile",
       temperature: 0,
     });
 
+
     const modelWithTools = model.bindTools([realTimeData, googleSearch]);
     const prompt = `You are a job matching AI analyzing a list of pre-filtered job recommendations tailored for a specific user profile.
+
 
 USER PROFILE:
 ${formattedUser}
 
+
 CANDIDATE JOBS (already filtered by vector similarity):
 ${formattedJobs}
+
 
 TOOL AVAILABILITY:
 - You have access to the real_time_search tool to look up unknown or new technology terms.
 - Use the tool ONLY if you encounter a skill/technology in the jobs or user profile that is completely unfamiliar.
 - For common technologies like React, Python, AWS, etc., do NOT use the tool.
+
 
 ANALYSIS INSTRUCTIONS:
 1. Calculate a match percentage for each job based on skill overlap with the user's skills.
@@ -202,95 +227,82 @@ ANALYSIS INSTRUCTIONS:
 5. Only include jobs where the match percentage is 40% or higher.
 6. Exclude jobs that require skills from completely unrelated fields or expertise.
 7. Sort the jobs by descending match percentage to rank the most relevant jobs at the top.
-8. Return only a JSON array of job IDs sorted according to this order.
 
 OUTPUT FORMAT:
-Return ONLY a valid JSON object of array of job IDs sorted by match percentage and a query for google search to recommend more jobs using google, no markdown, no explanations, no code blocks.
+Return ONLY valid JSON with NO markdown or code blocks:
+{"jobIds":["jobId1","jobId2"],"jobTitle":"Full Stack Web Developer"}`;
 
-Example (highest matching jobs first):
-[{"jobIds":["jobId1", "jobId2", "jobId3"]},{"google search query":"..."}]
-
-If no jobs meet the minimum match threshold, return an empty JSON array:
-[]
-`;
 
     const response = await modelWithTools.invoke(prompt);
-    const content = response.content.toString().trim();
+    const content = String(response.content).trim();
+
 
     console.log("LLM raw response:", content);
 
-    // Robust parsing for multiple adjacent JSON objects without a wrapping array
+
     let jobIds: string[] = [];
     let googleQuery: string | undefined;
 
-    try {
-      // Split the content string on '},{' to separate adjacent JSON objects
-      const parts = content.split(/(?<=\}),(?=\{)/);
 
-      if (parts.length > 0) {
-        const firstObj = JSON.parse(parts[0]);
-        if (Array.isArray(firstObj.jobIds)) {
-          jobIds = firstObj.jobIds.filter((id: unknown) => typeof id === "string");
-        }
+    try {
+       const cleanContent = content
+  .replace(/```/g, "")       // remove all ``` from content
+  .replace(/```\s*/g, "")    // remove ``` followed by spaces/newlines
+  .trim();
+
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON object found in response");
       }
 
-      if (parts.length > 1) {
-        const secondObj = JSON.parse(parts[1]);
-        if (typeof secondObj["google search query"] === "string") {
-          googleQuery = secondObj["google search query"];
-        }
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      if (
+        parsed.jobIds &&
+        Array.isArray(parsed.jobIds) &&
+        parsed.jobIds.length > 0
+      ) {
+        jobIds = parsed.jobIds.filter((id: unknown) => typeof id === "string");
+      }
+
+      if (typeof parsed.jobTitle === "string" && parsed.jobTitle.trim()) {
+        googleQuery = parsed.jobTitle;
       }
 
       console.log("Parsed jobIds:", jobIds);
       console.log("Parsed google search query:", googleQuery);
     } catch (err) {
-      console.error("Failed to parse multiple JSON objects, falling back. Error:", err);
+      console.error("Failed to parse JSON:", err);
 
-      // Fallback: try to parse the entire response as JSON array/object (rare case)
-      try {
-        const parsed = JSON.parse(content);
-        if (
-          Array.isArray(parsed) &&
-          parsed.length &&
-          typeof parsed[0] === "object" &&
-          parsed[0] !== null &&
-          Array.isArray(parsed[0].jobIds)
-        ) {
-          jobIds = parsed[0].jobIds.filter((id: unknown) => typeof id === "string");
-          if (parsed[1]?.["google search query"]) {
-            googleQuery = parsed[1]["google search query"];
-          }
-          console.log("Fallback parse successful, parsed as array with jobIds", jobIds, googleQuery);
-        } else if (
-          Array.isArray(parsed) &&
-          parsed.every((id: unknown) => typeof id === "string")
-        ) {
-          jobIds = parsed;
-          console.log("Fallback parse successful, parsed as flat jobIds list", jobIds);
-        } else if (
-          typeof parsed === "object" &&
-          parsed !== null &&
-          parsed.jobIds
-        ) {
-          jobIds = Array.isArray(parsed.jobIds) ? parsed.jobIds : [];
-          console.log("Fallback parse successful, parsed as object with jobIds", jobIds);
-        } else {
-          throw new Error("Could not determine jobIds fallback structure");
-        }
-      } catch (fallbackError) {
-        console.error("Fallback parsing failed as well:", fallbackError);
-        jobIds = [];
+      const idRegex = /["']([a-f0-9]{24})["']/g;
+      const matches = content.match(idRegex);
+      
+      if (matches && matches.length > 0) {
+        jobIds = matches
+          .map((m) => m.replace(/["']/g, ""))
+          .filter((id) => id.length === 24);
       }
+
+      const titleRegex = /"jobTitle"\s*:\s*["']([^"']+)["']/i;
+      const titleMatch = content.match(titleRegex);
+      if (titleMatch && titleMatch[1]) {
+        googleQuery = titleMatch[1];
+      }
+
+      console.log("Fallback parse successful, parsed jobIds:", jobIds, "query:", googleQuery);
     }
+
 
     jobIds = jobIds.filter((id) => typeof id === "string" && id.trim().length > 0);
 
+
     if (jobIds.length > 0) {
-      return {jobId:jobIds.slice(0, 15),google:googleQuery};
+      return { jobId: jobIds.slice(0, 15), google: googleQuery };
     }
 
+
     console.warn("No job IDs found in LLM response, falling back to vector similarity fallback.");
-    return allJobIds.slice(0, Math.min(10, allJobIds.length));
+    return { jobId: allJobIds.slice(0, Math.min(10, allJobIds.length)), google: undefined };
   } catch (error) {
     console.error("Error in job recommendation:", error);
     return [];

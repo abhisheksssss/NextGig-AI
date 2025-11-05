@@ -1,11 +1,13 @@
 import { ChatGroq } from "@langchain/groq";
 import { AgentExecutor, createReactAgent } from "langchain/agents";
 import { pull } from "langchain/hub";
-import { DynamicTool } from "@langchain/core/tools"; // 1. Import DynamicTool
 import type { PromptTemplate } from "@langchain/core/prompts";
-import { tavily } from "@tavily/core";
+import { realTimeData } from "./tools/toolsForWebScrapping";
+import { realTimeNewsData } from "./tools/toolsForWebScrapping";
 
-const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
+// import { tavily } from "@tavily/core";
+
+// const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
 // const calculatorTool = new DynamicTool({
 //   name: "calculator",
@@ -21,66 +23,65 @@ const tool = tavily({ apiKey: process.env.TAVILY_API_KEY });
 // });
 
 
-const realTimeData=new DynamicTool({
-  name:"real time data",
-  description:"provide the input and get real time data from tavily search",
-  func: async(Input:string)=>{
-    try {
-         const answer = await tool.search(`${Input}`,{maxResults:3});
+// const realTimeData=new DynamicTool({
+//   name:"real time data",
+//   description:"provide the input and get real time data from tavily search",
+//   func: async(Input:string)=>{
+//     try {
+//          const answer = await tool.search(`${Input}`,{maxResults:3});
 
-         console.log("This is the answer",answer)
+//          console.log("This is the answer",answer)
 
-  if (answer && answer.results) {
-        const formattedResults = answer.results.map((result, index) => 
-          `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
-        ).join("\n\n---\n\n");
+//   if (answer && answer.results) {
+//         const formattedResults = answer.results.map((result, index) => 
+//           `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
+//         ).join("\n\n---\n\n");
         
-        return formattedResults;
-      }
+//         return formattedResults;
+//       }
 
-         return "No results found.";
+//          return "No results found.";
 
-    } catch (error) {
-      console.log(error)
-      return "Error fetching real-time data.";
-    }
-  }
-})
-const realTimeNewsData=new DynamicTool({
-  name:"Fetch real time news data",
-  description:"Provide the input and get real time news data",
-  func: async(Input:string)=>{
-    try {
-  const toolGnews = await fetch(
-    `https://newsapi.org/v2/everything?q=${Input}&apiKey=${process.env.NEWS_API_KEY}`
-    );
+//     } catch (error) {
+//       console.log(error)
+//       return "Error fetching real-time data.";
+//     }
+//   }
+// })
 
+// const realTimeNewsData=new DynamicTool({
+//   name:"Fetch real time news data",
+//   description:"Provide the input and get real time news data",
+//   func: async(Input:string)=>{
+//     try {
+//   const toolGnews = await fetch(
+//     `https://newsapi.org/v2/everything?q=${Input}&apiKey=${process.env.NEWS_API_KEY}`
+//     );
 
-    console.log("Tool is executed and this is the real time news data",toolGnews)
+//     console.log("Tool is executed and this is the real time news data",toolGnews)
 
-  // if (answer && answer.results) {
-  //       const formattedResults = answer.results.map((result, index) => 
-  //         `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
-  //       ).join("\n\n---\n\n");
+//   // if (answer && answer.results) {
+//   //       const formattedResults = answer.results.map((result, index) => 
+//   //         `Result ${index + 1}:\nTitle: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`
+//   //       ).join("\n\n---\n\n");
         
-  //       return formattedResults;
-  //     }
+//   //       return formattedResults;
+//   //     }
 
-         return "No results found.";
-
-    } catch (error) {
-      console.log(error)
-      return "Error fetching real-time data.";
-    }
-  }
-})
-
-
+//          return "No results found.";
+//     } catch (error) {
+//       console.log(error)
+//       return "Error fetching real-time data.";
+//     }
+//   }
+// })
 
 export async function groqCalling(query: string) {
   const model = new ChatGroq({
-    model: "llama-3.3-70b-versatile",
-    temperature: 0,
+    apiKey:process.env.GROQ_KEY_2,
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    temperature: 1,
+    maxTokens:1024,
   });
 
   const tools = [realTimeData,realTimeNewsData];

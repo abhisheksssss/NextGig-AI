@@ -508,8 +508,8 @@ export default function ProfileSetup() {
                             <SelectValue placeholder="Select preference" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Full-time">Full-time</SelectItem>
-                            <SelectItem value="Part-time">Part-time</SelectItem>
+                            {/* <SelectItem value="Full-time">Full-time</SelectItem>
+                            <SelectItem value="Part-time">Part-time</SelectItem> */}
                             <SelectItem value="Freelance">Freelance</SelectItem>
                           </SelectContent>
                         </Select>

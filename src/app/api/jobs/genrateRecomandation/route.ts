@@ -5,7 +5,7 @@ import { mongoDBConncection } from "@/app/dbConfig/db";
 import "@/helper/model/Client.model";
 import Freelancer from "@/helper/model/freelancer.model";
 import { JobRecomandation } from "@/service/JobRecomandationSystem";
-import Redis from "ioredis";
+import { redis } from "@/service/redish.service";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,12 +16,12 @@ export async function GET(request: NextRequest) {
 
     const freelancerIdDetails = await Freelancer.find({ userId: userID }).select("Proffession Skills");
 
-    const redis = new Redis({
-      host: process.env.REDIS_C,
-      port: 19824,
-      username: "default",
-      password: "3iV7W8pB49zwzIhebJA7eA7Uc8n4fbav"
-    });
+    // const redis = new Redis({
+    //   host: process.env.REDIS_C,
+    //   port: 19824,
+    //   username: "default",
+    //   password: "3iV7W8pB49zwzIhebJA7eA7Uc8n4fbav"
+    // });
     redis.on("connect", () => console.log("✅ Redis connected"));
     redis.on("error", (err) => console.error("❌ Redis Error:", err));
 
