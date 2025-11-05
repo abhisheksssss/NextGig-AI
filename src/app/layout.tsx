@@ -34,7 +34,30 @@ export default function RootLayout({
         <UserProvider>
           <Providers>{children}</Providers>
         </UserProvider>
-       <Toaster/>
+        <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#333',
+            color: '#fff',
+            borderRadius: '10px',
+            padding: '12px 16px',
+          },
+          success: {
+            iconTheme: {
+              primary: 'green',
+              secondary: 'white',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: 'red',
+              secondary: 'white',
+            },
+          },
+        }}
+      />
 </QueryProvider>
       </body>
     </html>

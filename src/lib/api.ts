@@ -215,6 +215,32 @@ export const fetchGoogleData=async(query:string)=>{
       } 
 }
 
+export async function getOtherPlatFormData(query: string, page: number) {
+  try {
+    const response = await axiosInstance.get(`/api/otherPlatformData?searchQuery=${query}&page=${page}`);
+    
+console.log(response)
+
+    if (!response.data) {
+      throw new Error(`Failed to fetch jobs: ${response.statusText}`);
+    }
+    
+    const data = await response.data;
+    
+    // Log the response to see its structure
+    console.log('API Response:', data);
+    
+    // Return the jobs array with proper structure
+    return {
+      jobs: data || data.data || [], // Handle different response structures
+    };
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
+    throw error;
+  }
+}
+
+
 export  const getWebSearchData=async(query:string|string[],queryType:string|string[],userId:string|undefined)=>{
     try {
         const res= await axiosInstance.get(`/api/search?query=${query}&queryType=${queryType}&userId=${userId}`) 

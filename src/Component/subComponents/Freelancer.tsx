@@ -192,7 +192,7 @@ const Freelancer = () => {
                   }`}>
                     {activeFilter === 'trending' 
                       ? '🔥 Trending Jobs' 
-                      : '✨ Jobs Recommended According To Your Profile'}
+                      : '✨ Jobs Recommended According To Your Activity'}
                   </span>
                   <button
                     onClick={() => setActiveFilter(null)}
@@ -219,7 +219,7 @@ const Freelancer = () => {
                   {activeFilter === 'recommended' ? (
                     <>
                       <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-500" />
-                      Jobs Recommended According To Your Profile
+                      Jobs Recommended According To Your Activity
                     </>
                   ) : searchQuery ? (
                     <>
@@ -229,7 +229,7 @@ const Freelancer = () => {
                   ) : (
                     <>
                       <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-500" />
-                      Recomanded Jobs
+                      Recommended Jobs
                     </>
                   )}
                 </h2>
