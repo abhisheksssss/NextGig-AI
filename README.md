@@ -1,4 +1,3 @@
-Here's an interactive-style, engaging `README.md` for **Next gig ai**, encouraging participation and exploration while presenting all technical and descriptive content dynamically:
 
 ***
 
@@ -101,8 +100,4 @@ User  <---->  Next.js UI  <----REST/Socket.IO---->  Next.js API/Express (Node)
 - 📈 Real-time analytics dashboard
 - 🌐 Integration with LinkedIn, Indeed & more
 
-***
 
-*Made with ambition, TypeScript, and AI magic. For detailed docs, system diagrams, and more, see the full report in this repo.*[1]
-
-[1](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/85640253/a0a11820-df3d-46da-a28f-c73fa37509a1/Report-Micro-Project-Sem-3.docx)
