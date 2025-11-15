@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Next-Gig
+Next gig ai leverages AI and modern web technology to transform hiring and freelancing, offering personalized job recommendations, trending jobs, real-time communication, and data-driven analytics for both freelancers and clients.​
 
-## Getting Started
+Project Overview
+This platform intelligently matches freelancers with suitable jobs and helps clients discover skilled professionals by analyzing user profiles, behaviors, and market trends through advanced AI models (Gemini, LLaMA). It features real-time chat, secure contract handling, and an interactive chatbot for market analytics, aiming to accelerate and personalize the job search and hiring process.​
 
-First, run the development server:
+Key Features
+Personalized Job Matching: AI-powered recommendations based on user profiles, tracked behaviors, and dynamic market demand.​
 
-```bash
+Trending Jobs: Highlights popular opportunities using applicant data and posting recency.​
+
+Real-Time Chat: Enables direct, secure messaging between freelancers and clients for project negotiations and support.​
+
+AI Chatbot: Offers profile analytics, job market insights, and conversational assistance through Gemini and LLaMA integration.​
+
+Behavior Tracking: Logs views, applications, and rejections, continuously improving recommendations.​
+
+Contracts: Facilitates seamless contract creation, management, and secure communication.​
+
+Technology Stack
+Layer	Technologies
+Frontend	Next.js, TailwindCSS, ShadCN/Radix UI, React Query
+Backend	Next.js API, Express.js, Socket.IO, Redis
+Database	MongoDB (Mongoose), Pinecone, Redis
+AI & ML	Gemini API, LLaMA 3.3, LangChain, LangGraph, Tavily
+Utilities	Cloudinary, JWT, bcryptjs, Axios, formidable, PDF-Parse, Remove-Markdown, UUID
+System Architecture
+Frontend: Responsive UI using Next.js and TailwindCSS, with advanced state and data management.​
+
+Backend: REST APIs and real-time communication via Express and Socket.IO.​
+
+AI Recommendation Engine: Combines Pinecone vector search, LLM analysis (Gemini, LLaMA), and Redis caching for intelligent, scalable recommendations.​
+
+Database: MongoDB for structured data, Pinecone for semantic search, Redis for fast caching and messaging.​
+
+Main Modules
+Authentication & Onboarding
+Secure registration/login, role-based onboarding for freelancers (skills) and clients (project/company info), and file upload via Cloudinary.​
+
+Dashboards
+Freelancers: Browse and apply for recommended jobs, manage contracts, chat with clients.​
+
+Clients: Post jobs, shortlist applications, hire freelancers, manage contracts, and communicate in real-time.​
+
+Recommendation Engine
+AI-powered multi-layered system utilizing Pinecone, LLMs, and aggregation analytics to deliver tailored job suggestions based on user activity and profile.​
+
+Trending jobs identified via MongoDB aggregation; recommendations refined based on behavioral data.​
+
+Real-Time Communication
+Socket.IO for instant chat and notifications, Redis PubSub for message delivery.​
+
+AI chatbot available for job analytics and support via LangChain/LangGraph (Gemini, LLaMA).​
+
+Contracts & Security
+End-to-end encrypted chat and secure contract creation/store in MongoDB.​
+
+JWT authentication, bcryptjs password hashing, and robust error handling throughout.​
+
+Screenshots
+Includes sample UI: signup/login, recommended jobs, chat, dashboard, chatbot interface, and contracts (refer to the project report for details).​
+
+How to Run
+Clone this repository.
+
+Install dependencies:
+
+text
+npm install
+Configure .env for MongoDB, Redis, Pinecone, Gemini API, Cloudinary, etc.
+
+Start development server:
+
+text
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Start backend Express server separately if required.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Conclusion
+Next gig ai combines modular architecture, cutting-edge AI, and scalable real-time technologies to deliver a fast, personalized hiring and freelancing platform.​
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Future Enhancements
+Voice command integration for chatbot
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Multi-language support (Gemini/Google Translate)
 
-## Learn More
+Real-time analytics dashboard (Chart.js, Recharts)
 
-To learn more about Next.js, take a look at the following resources:
+External job platform integration (LinkedIn, Indeed)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Expanded AI analysis for global reach and personalization​
